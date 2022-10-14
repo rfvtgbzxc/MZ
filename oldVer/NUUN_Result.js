@@ -9,11 +9,11 @@
  */ 
 /*:
  * @target MZ
- * @plugindesc  リザルト
+ * @plugindesc リザルト
  * @author NUUN
  * @base NUUN_Base
  * @orderAfter NUUN_Base
- * @version 1.12.0
+ * @version 1.15.1
  * 
  * @help
  * 戦闘終了時にリザルト画面を表示します。
@@ -25,10 +25,6 @@
  * レベルアップ画面はレベルアップしたアクターのみ表示されます。
  * 
  * 戦闘勝利後に任意のBGMを再生できます。MEが指定してある場合はME再生終了後に再生されます。
- * 
- * 戦闘終了後に表示されるリザルト画面を遅らせて表示させることが出来ます。
- * BattleManager.processVictory内の処理を分割しているため一部のプラグインで競合を起こす場合があります。
- * 「勝利後リザルト画面遅延フレーム数」の設定値0で機能無効（コアスクリプトと同じ処理）になります。
  * 
  * 仕様
  * ウィンドウ画面のX座標は画面の中央になるよう設定されていますが、Y座標は上よりに表示されるようになっています。Y座標を変更するには「ウィンドウY座標」で設定してください。
@@ -51,7 +47,7 @@
  * 
  * アクターの参照変数（レベルアップ画面の独自パラメータ）
  * actor アクターのデータベースデータ　メタデータを取得する場合はこちらから
- * this._actor アクターのゲームデータ
+ * this._actorまたはdactor アクターのゲームデータ
  * 
  * アイテム、スキルのメモ欄
  * <ResultItemColor:[カラーインデックス]> 取得したアイテム、習得したスキルの文字色に色を付けることが出来ます。
@@ -77,10 +73,47 @@
  * エンター　切り替え、画面を閉じる 右クリック
  * ←→　ドロップアイテム、習得スキルページ切り替え
  * 
+ * 
  * 利用規約
  * このプラグインはMITライセンスで配布しています。
  * 
  * 更新履歴
+ * 2022/7/3 Ver.1.15.1
+ * レベルアップ時の差分処理を修正。
+ * レベルアップ差分ステータスに装備補正等なしのパラメータを指定できる機能を追加。
+ * 2022/7/2 Ver.1.15.0
+ * 盗んだアイテムを表示する機能を追加。
+ * EXPゲージがはみ出る問題を修正。
+ * 獲得経験値ゲージX座標の仕様変更。(下限0)
+ * 2022/5/12 Ver.1.14.6
+ * レベルアップ画面表示時戦闘結果テキストを空白指定しなときに何も表示しないように変更。
+ * 2022/5/3 Ver.1.14.5
+ * スキル習得一覧とレベルアップ差分表示が重なってしまう問題を修正。
+ * 2022/5/1 Ver.1.14.4
+ * EXP獲得ゲージの座標を調整できる機能を追加。
+ * 2022/4/26 Ver.1.14.3
+ * レベルアップ画面のレベルの差分表示の幅を指定できる機能を追加。
+ * 2022/1/1 Ver.1.14.2
+ * 一部処理を修正。
+ * 2021/12/17 Ver.1.14.1
+ * 立ち絵、顔グラEXで画像表示時の画像開始地点を設定できる機能を追加。
+ * 入手項目の設定でオリジナル項目が表示しない問題を修正。
+ * 2021/12/15 Ver.1.14.0
+ * ドロップアイテムを個数表示に表示できる機能を追加。
+ * 立ち絵、顔グラ表示EXに対応。
+ * 2021/11/26 Ver.1.13.1
+ * 背景画像を設定するとレベルアップ画面で操作ができなくなる問題を修正。
+ * レベルアップ画面のメインウィンドウにスキンを設定できる機能を追加。
+ * 2021/11/6 Ver.1.13.0
+ * レベルアップ画面のヘルプウィンドウにレベルアップ時のテキストを表示させる機能を追加。
+ * 2021/9/19 Ver.1.12.4
+ * コアスクリプトVer.1.3.3による修正。
+ * 2021/8/9 Ver.1.12.3
+ * サポートアクターを表示するように修正。
+ * 2021/8/7 Ver.1.12.2
+ * 控えメンバーを表示する機能を追加。
+ * 2021/7/31 Ver.1.12.1
+ * 競合対策
  * 2021/7/10 Ver.1.12.0
  * ウィンドウの処理を変更。（レベルアップ画面では戦闘結果ウィンドウを表示しないように変更しました）
  * レベルアップ時のアクター毎にウィンドウスキン又は背景画像を指定できる機能を追加。
@@ -274,6 +307,7 @@
  * @desc リザルト画面をフェードインで表示する。
  * @parent CommonSetting
  * 
+ * 
  * @param WindowSetting
  * @text ウィンドウ設定
  * @default ------------------------------
@@ -396,7 +430,22 @@
  * @value "center"
  * @option 右
  * @value "right"
- * @default center
+ * @default 'center'
+ * @parent HelpWindowSetting
+ * 
+ * @param LevelUpResultTextPosition
+ * @desc レベルアップ画面の戦闘結果の文字の表示位置を指定します。
+ * @text レベルアップ画面戦闘結果文字の位置
+ * @type select
+ * @option 制御文字使用可(左揃え)
+ * @value "TextEx"
+ * @option 左
+ * @value "left"
+ * @option 中央
+ * @value "center"
+ * @option 右
+ * @value "right"
+ * @default "TextEx"
  * @parent HelpWindowSetting
  * 
  * @param SkinSetting
@@ -413,8 +462,16 @@
  * @parent SkinSetting
  * 
  * @param ResultMainWindowsSkin
- * @desc リザルトメインのウィンドウのウィンドウスキンを指定します。
- * @text リザルトウィンドウのスキン
+ * @desc 最初のページのリザルトメインのウィンドウのウィンドウスキンを指定します。
+ * @text 最初ページリザルトウィンドウのスキン
+ * @type file
+ * @dir img/system
+ * @default 
+ * @parent SkinSetting
+ * 
+ * @param ResultLevelWindowsSkin
+ * @desc レベルアップページのリザルトメインのウィンドウのウィンドウスキンを指定します。
+ * @text レベルアップリザルトウィンドウのスキン
  * @type file
  * @dir img/system
  * @default 
@@ -451,6 +508,13 @@
  * @option サイドビューアクターを表示
  * @value 3
  * @default 1
+ * @parent GetPage
+ * 
+ * @param ReserveMembers
+ * @type boolean
+ * @default false
+ * @text 控えメンバー表示
+ * @desc 控えメンバー表示。
  * @parent GetPage
  * 
  * @param FaceWidth
@@ -567,6 +631,14 @@
  * @default 0
  * @parent GetPage
  * 
+ * @param PartyBackGroundImg
+ * @desc 背景画像ファイル名を指定します。
+ * @text 背景画像
+ * @type file[]
+ * @dir img/
+ * @default []
+ * @parent GetPage
+ * 
  * @param FontColor
  * @text 文字色設定
  * @default ------------------------------
@@ -664,11 +736,34 @@
  * @desc 獲得経験値を表示します。
  * @parent ExpSetting
  * 
+ * @param Gauge_Width
+ * @desc EXPゲージ横幅(0で300)
+ * @text EXPゲージ横幅
+ * @type number
+ * @default 0
+ * @parent ExpSetting
+ * 
  * @param EXP_Y
  * @desc 獲得経験値のY座標（デフォルト:30）
  * @text 獲得経験値Y座標
  * @type number
  * @default 30
+ * @min -999
+ * @parent ExpSetting
+ * 
+ * @param EXPGauge_X
+ * @desc 獲得経験値ゲージのX座標
+ * @text 獲得経験値ゲージX座標
+ * @type number
+ * @default 0
+ * @min 0
+ * @parent ExpSetting
+ * 
+ * @param EXPGauge_Y
+ * @desc 獲得経験値ゲージのY座標（デフォルト:18）
+ * @text 獲得経験値ゲージY座標
+ * @type number
+ * @default 18
  * @min -999
  * @parent ExpSetting
  * 
@@ -732,13 +827,57 @@
  * @default 0
  * @parent GetPage
  * 
- * @param PartyBackGroundImg
- * @desc 背景画像ファイル名を指定します。
- * @text 背景画像
- * @type file[]
- * @dir img/
- * @default []
+ * @param DropItemSetting
+ * @text ドロップアイテム設定
+ * @default ------------------------------
  * @parent GetPage
+ * 
+ * @param DropItemRows
+ * @desc ドロップアイテムの表示行（0で下まで）
+ * @text ドロップアイテム表示行
+ * @type number
+ * @default 0
+ * @parent DropItemSetting
+ * 
+ * @param DropItemNumVisible
+ * @type boolean
+ * @default false
+ * @text ドロップアイテム個数表示
+ * @desc ドロップアイテムを個数表示します。OFFで個別表示
+ * @parent DropItemSetting
+ * 
+ * @param DropItemNumx
+ * @desc ドロップアイテムの個数左の文字
+ * @text 個数左の文字
+ * @type string
+ * @default x 
+ * @parent DropItemSetting
+ * 
+ * @param StealItemSetting
+ * @text 盗みアイテム設定（要NUUN_StealableItems）
+ * @default ------------------------------
+ * @parent GetPage
+ * 
+ * @param StealItemVisible
+ * @type boolean
+ * @default false
+ * @text 盗んだアイテム表示
+ * @desc 盗んだアイテムを表示します。
+ * @parent StealItemSetting
+ * 
+ * @param StealItemNumVisible
+ * @type boolean
+ * @default false
+ * @text 盗んだアイテム個数表示
+ * @desc 盗んだアイテムを個数表示します。OFFで個別表示
+ * @parent StealItemSetting
+ * 
+ * @param StealItemNumx
+ * @desc 盗んだアイテムの個数左の文字
+ * @text 個数左の文字
+ * @type string
+ * @default x 
+ * @parent StealItemSetting
  * 
  * @param LevelUpPage
  * @text レベルアップ画面設定
@@ -785,6 +924,20 @@
  * @default []
  * @parent ActorImg
  * 
+ * @param ActorPictureData
+ * @text 立ち絵表示EX用画像設定
+ * @desc 立ち絵表示EXでのアクターの画像設定
+ * @default []
+ * @type struct<ActorPictureDataList>[]
+ * @parent ActorImg
+ * 
+ * @param ActorPictureEXApp
+ * @text 立ち絵表示EX適用
+ * @desc 立ち絵表示EXの画像変更を適用します。OFFにした場合はこのプラグインでの設定が適用されます。
+ * @type boolean
+ * @default true
+ * @parent ActorImg
+ * 
  * @param ActorPosition
  * @text 立ち絵表示位置
  * @desc 立ち絵の表示位置を指定します
@@ -803,6 +956,13 @@
  * @default true
  * @text レベルアップ画面表示
  * @desc レベルアップ画面表示します。falseでレベルアップ後のステータス差分、習得スキル演出をカットします。
+ * @parent LevelUpPage
+ * 
+ * @param LevelUpWidth
+ * @desc レベルアップの差分表示の表示範囲幅
+ * @text レベルアップ表示範囲幅
+ * @type number
+ * @default 100
  * @parent LevelUpPage
  * 
  * @param DifferenceStatusColor
@@ -869,6 +1029,13 @@
  * @default 戦闘結果
  * @parent NameSetting
  * 
+ * @param LevelUpResultHelpName
+ * @desc レベルアップ画面表示時の戦闘結果のテキストを設定します。%1:アクター名　%2:レベル
+ * @text レベルアップ画面表示時戦闘結果テキスト
+ * @type string
+ * @default %1は\c[16]レベル\c[17]%2\c[0]に上がった！
+ * @parent NameSetting
+ * 
  * @param GetEXPName
  * @text 獲得経験値の名称
  * @desc 獲得経験値の名称を設定します。
@@ -895,6 +1062,13 @@
  * @desc 習得スキルの名称を設定します。
  * @type string
  * @default 習得スキル
+ * @parent NameSetting
+ * 
+ * @param GetStealItemName
+ * @text 盗んだアイテムの名称
+ * @desc 盗んだアイテムの名称を設定します。（要NUUN_StealableItems）
+ * @type string
+ * @default 盗んだアイテム
  * @parent NameSetting
  * 
  * @param SESetting
@@ -1144,6 +1318,22 @@
  * @value 6
  * @option 運
  * @value 7
+ * @option HP(装備補正等なし)
+ * @value 10
+ * @option MP(装備補正等なし)
+ * @value 11
+ * @option 攻撃力(装備補正等なし)
+ * @value 12
+ * @option 防御力(装備補正等なし)
+ * @value 13
+ * @option 魔法力(装備補正等なし)
+ * @value 14
+ * @option 魔法防御(装備補正等なし)
+ * @value 15
+ * @option 敏捷性(装備補正等なし)
+ * @value 16
+ * @option 運(装備補正等なし)
+ * @value 17
  * @option オリジナルパラメータ
  * @value 20
  * @default 0
@@ -1152,7 +1342,7 @@
  * @type boolean
  * @default true
  * @text 差分表示
- * @desc 差分を表示します。オリジナルパラメータは表示しません。
+ * @desc 差分を表示します。
  * 
  * @param OriginalParamName
  * @text オリジナルパラメータ名称
@@ -1162,10 +1352,58 @@
  * 
  * @param OriginalParamEval
  * @text オリジナルパラメータ評価式
- * @desc オリジナルパラメータの評価式を記入します。
+ * @desc オリジナルパラメータの評価式を記入します。actor:アクターのゲームデータ dactor:アクターのシステムデータ
  * @default
  * @type string
  *  
+ */
+/*~struct~ActorPictureDataList:
+ * 
+ * @param actorId
+ * @text アクター
+ * @desc アクターを指定します。
+ * @type actor
+ * 
+ * @param Actor_X
+ * @desc 画像のX座標。
+ * @text 画像X座標
+ * @type number
+ * @default 0
+ * @min -9999
+ * @max 9999
+ * 
+ * @param Actor_Y
+ * @desc 画像のY座標。
+ * @text 画像Y座標
+ * @type number
+ * @default 0
+ * @min -9999
+ * @max 9999
+ * 
+ * @param Img_SX
+ * @desc 画像の表示開始座標X。
+ * @text 画像表示開始座標X
+ * @type number
+ * @default 0
+ * @min 0
+ * @max 9999
+ * 
+ * @param Img_SY
+ * @desc 画像の表示開始座標Y
+ * @text 画像表示開始座標Y
+ * @type number
+ * @default 0
+ * @min 0
+ * @max 9999
+ * 
+ * @param Actor_Scale
+ * @desc 画像の拡大率。
+ * @text 画像拡大率
+ * @type number
+ * @default 100
+ * @min 0
+ * @max 999
+ * 
  */
 
 var Imported = Imported || {};
@@ -1190,7 +1428,8 @@ param.ButlerActors = param.ButlerActors || [];
 param.ActorBackGroundImg = param.ActorBackGroundImg && param.ActorBackGroundImg.length > 0 ? param.ActorBackGroundImg[0] : null;
 param.PartyBackGroundImg = param.PartyBackGroundImg && param.PartyBackGroundImg.length > 0 ? param.PartyBackGroundImg[0] : null;
 const LevelUpActorSeData = param.LevelUpActorSe ? {name: param.LevelUpActorSe, volume: param.LevelUpActorVolume, pitch: param.LevelUpActorPitch, pan: param.LevelUpActorPan} : null;
-let gaugeWidth = 300;
+let gaugeWidth = param.Gauge_Width > 0 ? param.Gauge_Width : 300;
+param.EXPGauge_X = Math.max(param.EXPGauge_X, 0);
 
 const pluginName = "NUUN_Result";
 
@@ -1220,26 +1459,33 @@ PluginManager.registerCommand(pluginName, 'ChangeActorImg', args => {
 const _Game_Actor_initMembers = Game_Actor.prototype.initMembers;
 Game_Actor.prototype.initMembers = function() {
   _Game_Actor_initMembers.call(this);
-  this.resultActorImg = [];
-  this.resultActorBitmap = null;
 };
 
 const _Game_Actor_setup = Game_Actor.prototype.setup;
 Game_Actor.prototype.setup = function(actorId) {
   _Game_Actor_setup.call(this, actorId);
-  this.initResultActorImg(actorId);
+  this.initResultActorImg();
 };
 
-Game_Actor.prototype.initResultActorImg = function(id) {
-  const list = param.ButlerActors.find(actors => actors.actorId === id);
-  this.resultActorImg = list || [];
-  this.resultActorImg.ActorImg = this.resultActorImg.ActorImg || [];
-  this.resultImgId = this.resultImgId === undefined ? 0 : this.resultImgId;
+Game_Actor.prototype.initResultActorImg = function() {
+  if (this.resultImgId === undefined) {
+    this.resultImgId = 0;
+  }
 };
 
 Game_Actor.prototype.setResultActorImgId = function(changeActorImgId) {
   this.resultImgId = Number(changeActorImgId) - 1;
-  this.resultActorBitmap = this.resultActorImg.ActorImg[this.resultImgId];
+};
+
+Game_Actor.prototype.getResultActorImg = function(id) {
+  this.initResultActorImg();
+  const find = param.ButlerActors.find(actors => actors.actorId === id && actors.ActorImg);
+  return find ? find.ActorImg[this.resultImgId] : null;
+};
+
+Game_Actor.prototype.getResultActorData = function(id) {
+  this.initResultActorImg();
+  return param.ButlerActors.find(actors => actors.actorId === id);
 };
 
 const _Game_Actor_requestMotionRefresh = Game_Actor.prototype.requestMotionRefresh;
@@ -1248,6 +1494,14 @@ Game_Actor.prototype.requestMotionRefresh = function() {
     _Game_Actor_requestMotionRefresh.call(this);
   }
 };
+
+const _Game_Party_performVictory = Game_Party.prototype.performVictory;
+Game_Party.prototype.performVictory = function() {
+  if (!BattleManager._victoryStart) {
+    _Game_Party_performVictory.call(this)
+  }
+};
+
 
 const _Scene_Battle_createAllWindows = Scene_Battle.prototype.createAllWindows;
 Scene_Battle.prototype.createAllWindows = function() {
@@ -1382,11 +1636,9 @@ Scene_Battle.prototype.createActorResultWindow = function() {
   this._actorResultWindow.setHandler("cancel", this.onResultOk.bind(this));
   this._actorResultWindow.hide();
   if (this._resultBaseSprite) {
-    this._resultBaseSprite.addChild(this._resultWindow);
+    this._resultBaseSprite.addChild(this._actorResultWindow);
     this._actorResultWindow.x += (Graphics.width - Graphics.boxWidth) / 2;
     this._actorResultWindow.y += (Graphics.height - Graphics.boxHeight) / 2;
-    this._actorResultWindow.setActorImgWindow(this._resultActorImgWindow);
-    this.setResultBuckground(this._resultBaseSprite);
   } else {
     this.addWindow(this._actorResultWindow);
   }
@@ -1395,7 +1647,7 @@ Scene_Battle.prototype.createActorResultWindow = function() {
 
 Scene_Battle.prototype.actorResultWindowRect = function() {
   const wx = (param.ResultWindowCenter ? (param.LevelUpResultWidth > 0 ? (Graphics.boxWidth - param.LevelUpResultWidth) / 2 : 0) : (Graphics.boxWidth - Graphics.width) / 2) + param.LevelUpResultWindow_X;
-  const wy = this.resultHelpAreaTop();
+  const wy = this.resultHelpAreaTop() + this.resultHelpAreaHeight();
   const ww = param.LevelUpResultWidth > 0 ? param.LevelUpResultWidth : Graphics.boxWidth;
   const wh = (param.LevelUpResultHeight > 0 ? param.LevelUpResultHeight : Graphics.boxHeight) - wy + param.LevelUpResultWindow_Y;
   return new Rectangle(wx, wy, ww, wh);
@@ -1435,7 +1687,7 @@ Scene_Battle.prototype.createResultLearnSkillWindow = function() {
 
 Scene_Battle.prototype.resultResultLearnSkillWindowRect = function() {
   const wx = (param.ResultWindowCenter ? (Graphics.width - Graphics.boxWidth) / 2 + (param.LevelUpResultWidth > 0 ? (Graphics.boxWidth - param.LevelUpResultWidth) / 2 : 0) : 0) + param.LevelUpResultWindow_X;
-  const wy = (Graphics.height - Graphics.boxHeight) / 2 + this.resultHelpAreaTop();
+  const wy = (Graphics.height - Graphics.boxHeight) / 2 + this.resultHelpAreaTop() + this.resultHelpAreaHeight();;
   const ww = this._actorResultWindow.width;
   const wh = this._actorResultWindow.height;
   return new Rectangle(wx, wy, ww, wh);
@@ -1504,12 +1756,14 @@ Scene_Battle.prototype.onResultOk = function() {
     this.backGroundActorShow();
     BattleManager.resultPage++;
     this._resultDropItemWindow.page = 0;
-    this._resultHelpWindow.hide();
+    //this._resultHelpWindow.hide();
     this._resultWindow.hide();
     this._resultDropItemWindow.hide();
     this._resultLearnSkillWindow.show();
     this._actorResultWindow.show();
     this._actorResultWindow.refresh();
+    this._resultHelpWindow.onLevelUpText();
+    this._resultHelpWindow.setLavelUpText(this._actorResultWindow._actor);
     this._resultLearnSkillWindow.refresh();
     this._actorResultWindow.activate();
     BattleManager.resultRefresh = param.ActorPageRefreshFrame;
@@ -1529,6 +1783,7 @@ Scene_Battle.prototype.resultOpen = function() {
   this.closeStatusWindow();
   this.backGroundPartyShow();
   this._resultWindow.activate();
+  this._resultHelpWindow.setText(param.ResultName)
   this._resultHelpWindow.show();
   this._resultWindow.show();
   this._resultDropItemWindow.show();
@@ -1554,8 +1809,8 @@ Scene_Battle.prototype.backGroundActorShow = function() {
   if (this._backGroundActorSprite) {
     this._resultHelpWindow.opacity = 0;
     this._resultHelpWindow.frameVisible = false;
-    this._resultWindow.opacity = 0;
-    this._resultWindow.frameVisible = false;
+    this._actorResultWindow.opacity = 0;
+    this._actorResultWindow.frameVisible = false;
     this._backGroundActorSprite.show();
   }
   if (this._resultBaseSprite) {
@@ -1718,34 +1973,42 @@ Window_ResultActorImg.prototype.refresh = function() {
 };
 
 Window_ResultActorImg.prototype.loadActorImg = function(actor) {
-  if (Imported.NUUN_Base && (actor.resultActorBitmap || actor.resultActorImg.ActorImg)) {
-    const loadBitmap = actor.resultActorBitmap ? actor.resultActorBitmap : actor.resultActorImg.ActorImg[actor.resultImgId];
-    actor.resultActorBitmap = loadBitmap;
+  let bitmap = null;
+  if (Imported.NUUN_ActorPicture && param.ActorPictureEXApp) {
+    bitmap = actor.getActorGraphicImg();
+  } else {
+    bitmap = actor.getResultActorImg(actor.actorId());
+  }
+  if (bitmap) {
+    ImageManager.nuun_LoadPictures(bitmap);
   }
 };
 
 Window_ResultActorImg.prototype.drawActorImg = function(actor) {
-  if (Imported.NUUN_Base && (actor.resultActorBitmap || actor.resultActorImg.ActorImg[actor.resultImgId])) {  
-    const loadBitmap = actor.resultActorBitmap ? actor.resultActorBitmap : actor.resultActorImg.ActorImg[actor.resultImgId];
-    if (loadBitmap) {
-      const bitmap = ImageManager.nuun_LoadPictures(loadBitmap);
-      if (!actor.resultActorBitmap) {
-        actor.resultActorBitmap = loadBitmap;
-      }
-      if (bitmap && !bitmap.isReady()) {
-        bitmap.addLoadListener(this.actorImgRefresh.bind(this, bitmap, actor.resultActorImg));
-      } else {
-        this.actorImgRefresh(bitmap, actor.resultActorImg);
-      }
+  let bitmap = null;
+  if (Imported.NUUN_ActorPicture && param.ActorPictureEXApp) {
+    bitmap = actor.getActorGraphicImg();
+  } else {
+    bitmap = actor.getResultActorImg(actor.actorId());
+  }
+  if (bitmap) {
+    bitmap = ImageManager.nuun_LoadPictures(bitmap);
+    if (bitmap && !bitmap.isReady()) {
+      bitmap.addLoadListener(this.actorImgRefresh.bind(this, bitmap, actor));
+    } else if (bitmap) {
+      this.actorImgRefresh(bitmap, actor);
     }
   } else if (this._actorSprite && this._actorSprite.bitmap){
     this._actorSprite.bitmap = null;
   }
 };
 
-Window_ResultActorImg.prototype.actorImgRefresh = function(bitmap, date) {
-  let x = date.Actor_X;
-  const scale = (date.Actor_Scale || 100) / 100;
+Window_ResultActorImg.prototype.actorImgRefresh = function(bitmap, actor) {
+  const data = Imported.NUUN_ActorPicture && param.ActorPictureEXApp ? battlreActorPicture(actor.actorId()) : actor.getResultActorData(actor.actorId());
+  let x = data.Actor_X;
+  const sx = data.Img_SX || 0;
+  const sy = data.Img_SY || 0;
+  const scale = (data.Actor_Scale || 100) / 100;
   if(param.ActorPosition === 0) {
     x += 0;
   } else if (param.ActorPosition === 1) {
@@ -1753,8 +2016,9 @@ Window_ResultActorImg.prototype.actorImgRefresh = function(bitmap, date) {
   } else {
     x += this.width - (bitmap.width * scale) - 24;
   }
-  const y = date.Actor_Y + (this.height - (bitmap.height * scale));
+  const y = data.Actor_Y + (this.height - (bitmap.height * scale));
   this.placeResultActorImg(this._actor, x, y, bitmap, scale);
+  this._actorSprite.setFrame(sx, sy, bitmap.width, bitmap.height);
 };
 
 Window_ResultActorImg.prototype.placeResultActorImg = function(actor, x, y, bitmap, scale) {
@@ -1792,33 +2056,76 @@ Window_ResultHelp.prototype.initialize = function(rect) {
   Window_Help.prototype.initialize.call(this, rect);
   this.openness = 0;
   this.openOpacity = 0;
+  this.resultFadein = false;
+  this._mode = 0;
   this.refresh();
-};
-
-Window_ResultHelp.prototype.refresh = function() {
-  if (param.ResultName) {
-    const rect = this.baseTextRect();
-    this.contents.clear();
-    this.drawText(param.ResultName, rect.x, rect.y, rect.width, param.ResultTextPosition);
-  }
 };
 
 const _Window_ResultHelp_updateOpen = Window_ResultHelp.prototype.updateOpen;
 Window_ResultHelp.prototype.updateOpen = function() {
-  if (param.ResultFadein && this._opening) {
+  if (param.ResultFadein && this.resultFadein) {
     this.openness = 255;
     this.openOpacity += 32;
     if (!param.PartyBackGroundImg && !param.ActorBackGroundImg) {
       this.opacity = this.openOpacity;
+    }
+    if (this.isResultFadein()) {
+      this.resultFadein = false;
     }
   }
   _Window_ResultHelp_updateOpen.call(this);
 };
 
 const _Window_ResultHelp_isOpen = Window_ResultHelp.prototype.isOpen;
-Window_ResultHelp.prototype.isOpen = function() {
-  return param.ResultFadein ? this.openOpacity >= 255 : _Window_ResultHelp_isOpen.call(this);
+Window_ResultHelp.prototype.isOpenAndActive = function() {
+  return this.isFadein() ? this.isResultFadein() && _Window_ResultHelp_isOpen.call(this) : 
+  _Window_ResultHelp_isOpen.call(this);
 };
+
+Window_ResultHelp.prototype.isResultFadein = function() {
+  return this.openOpacity >= 255;
+};
+
+const _Window_ResultHelp_open = Window_ResultHelp.prototype.open;
+Window_ResultHelp.prototype.open = function() {
+  _Window_ResultHelp_open.call(this);
+  if (this.isFadein() && !this.resultFadein) {
+    this.resultFadein = true;
+  }
+};
+
+Window_ResultHelp.prototype.isFadein = function() {
+  return param.ResultFadein || param.PartyBackGroundImg || param.ActorBackGroundImg;
+};
+
+Window_ResultHelp.prototype.refresh = function() {
+  const rect = this.baseTextRect();
+  this.contents.clear();
+  if (this._mode === 0) {
+    this.drawText(this._text, rect.x, rect.y, rect.width, param.ResultTextPosition);
+  } else {
+    if (param.LevelUpResultTextPosition === 'TextEx') {
+      this.drawTextEx(this._text, rect.x, rect.y, rect.width);
+    } else {
+      this.drawText(this._text, rect.x, rect.y, rect.width, param.LevelUpResultTextPosition);
+    }
+  }
+};
+
+Window_ResultHelp.prototype.setLavelUpText = function(actor) {
+  let text = '';
+  if (param.LevelUpResultHelpName) {
+    text = param.LevelUpResultHelpName.format(actor.name(), actor._level);
+  } else {
+    text = ''
+  }
+  this.setText(text);
+};
+
+Window_ResultHelp.prototype.onLevelUpText = function() {
+  this._mode = 1;
+};
+
 
 function Window_Result() {
   this.initialize(...arguments);
@@ -1835,6 +2142,7 @@ Window_Result.prototype.initialize = function(rect) {
   this._actor = null;
   this._canRepeat = false;
   this.openOpacity = 0;
+  this.resultFadein = false;
   this.loadImages();
 };
 
@@ -1845,7 +2153,8 @@ Window_Result.prototype.resultSkin = function() {
 Window_Result.prototype.loadImages = function() {
   for (const actor of $gameParty.members()) {
     if (param.ActorShow === 1) {
-      ImageManager.loadFace(actor.faceName());
+      const faceName = Imported.NUUN_ActorPicture && param.ActorPictureEXApp ? actor.getActorGraphicFace() : actor.faceName();
+      ImageManager.loadFace(faceName);
     } else if (param.ActorShow === 2) {
       ImageManager.loadCharacter(actor.characterName());
     } else if (param.ActorShow === 3) {
@@ -1870,11 +2179,22 @@ Window_Result.prototype.actorContentHeight = function(scale) {
 };
 
 Window_Result.prototype.actor = function(index) {
-  return $gameParty.battleMembers()[index];
+  return this.members()[index];
 };
 
 Window_Result.prototype.actorMembers = function() {
-  return $gameParty.battleMembers().length;
+  return this.members().length;
+};
+
+Window_Result.prototype.members = function() {
+  if (param.ReserveMembers) {
+    return $gameParty.allMembers();
+  } else {
+    if (Imported.NUUN_SupportActor) {
+      $gameParty.membersMode = true;
+    }
+    return $gameParty.battleMembers();
+  }
 };
 
 Window_Result.prototype.actorAreaWidth = function(scale) {
@@ -1907,7 +2227,7 @@ Window_Result.prototype.refresh = function() {
   const width = Math.floor(contentWidth / param.ActorCols);
   const faceArea = rect.x + this.actorAreaWidth(scale);
   const x2 = rect.x + width;
-  gaugeWidth = width - faceArea - 30;//
+  gaugeWidth = Math.min(gaugeWidth, width - (faceArea + param.EXPGauge_X + 30));
   for (let i = 0; this.actorMembers() > i; i++) {
     this._actor = this.actor(i);
     this._actor._learnSkill = [];
@@ -1928,7 +2248,7 @@ Window_Result.prototype.refresh = function() {
     } else if (param.LavelUpPosition === 10) {
       this.drawLevelUp(x + param.LevelUp_X , y + param.LevelUp_Y, width, param.ResultActorVisible);
     }
-    this.drawExpGauge(x + width - gaugeWidth - 30, y + param.EXP_Y + 18, param.ResultActorVisible);
+    this.drawExpGauge(x + faceArea + param.EXPGauge_X, y + param.EXP_Y + param.EXPGauge_Y, param.ResultActorVisible);
     this.drawGetEXP(x + faceArea, y + param.EXP_Y, width, param.ResultActorVisible);
   }
   this.drawGainList(rect.x + contentWidth, rect.y, rect.width - contentWidth);
@@ -1964,37 +2284,45 @@ Window_Result.prototype.drawGainList = function(x, y, width) {
 };
 
 Window_Result.prototype.loadActorImg = function(actor) {
-  if (Imported.NUUN_Base && (actor.resultActorBitmap || actor.resultActorImg.ActorImg)) {
-    const loadBitmap = actor.resultActorBitmap ? actor.resultActorBitmap : actor.resultActorImg.ActorImg[actor.resultImgId];
-    actor.resultActorBitmap = loadBitmap;
-  } 
+  let bitmap = null;
+  if (Imported.NUUN_ActorPicture && param.ActorPictureEXApp) {
+    bitmap = actor.getActorGraphicImg();
+  } else {
+    bitmap = actor.getResultActorImg(actor.actorId());
+  }
+  if (bitmap) {
+    ImageManager.nuun_LoadPictures(bitmap);
+  }
 };
 
 Window_Result.prototype.drawActorImg = function(actor) {
+  let bitmap = null;
   if (this._resultActorImgWindow) {
     this._resultActorImgWindow.setActor(actor);
     this._resultActorImgWindow.refresh();
   } else {
-    if (Imported.NUUN_Base && (actor.resultActorBitmap || actor.resultActorImg.ActorImg)) {
-      const loadBitmap = actor.resultActorBitmap ? actor.resultActorBitmap : actor.resultActorImg.ActorImg[actor.resultImgId];
-      if (!actor.resultActorBitmap) {
-        actor.resultActorBitmap = loadBitmap;
-      }
-      const bitmap = ImageManager.nuun_LoadPictures(loadBitmap);
-      if (loadBitmap) {
-        if (bitmap && !bitmap.isReady()) {
-          bitmap.addLoadListener(this.actorImgRefresh.bind(this, bitmap, actor.resultActorImg));
-        } else {
-          this.actorImgRefresh(bitmap, actor.resultActorImg);
-        }
+    if (Imported.NUUN_ActorPicture && param.ActorPictureEXApp) {
+      bitmap = actor.getActorGraphicImg();
+    } else {
+      bitmap = actor.getResultActorImg(actor.actorId());
+    }
+    if (bitmap) {
+      bitmap = ImageManager.nuun_LoadPictures(bitmap);
+      if (bitmap && !bitmap.isReady()) {
+        bitmap.addLoadListener(this.actorImgRefresh.bind(this, bitmap, actor));
+      } else if (bitmap) {
+        this.actorImgRefresh(bitmap, actor);
       }
     }
-  } 
+  }
 };
 
-Window_Result.prototype.actorImgRefresh = function(bitmap, date) {
-  let x = date.Actor_X;
-  const scale = (date.Actor_Scale || 100) / 100;
+Window_Result.prototype.actorImgRefresh = function(bitmap, actor) {
+  const data = Imported.NUUN_ActorPicture && param.ActorPictureEXApp ? battlreActorPicture(actor.actorId()) : actor.getResultActorData(actor.actorId());
+  let x = data.Actor_X;
+  const sx = data.Img_SX || 0;
+  const sy = data.Img_SY || 0;
+  const scale = (data.Actor_Scale || 100) / 100;
   if(param.ActorPosition === 0) {
     x += 0;
   } else if (param.ActorPosition === 1) {
@@ -2004,13 +2332,18 @@ Window_Result.prototype.actorImgRefresh = function(bitmap, date) {
   }
   const dw = bitmap.width * scale;
   const dh = bitmap.height * scale;
-  const y = date.Actor_Y + (this.height - (bitmap.height * scale)) - 24;
-  this.contents.blt(bitmap, 0, 0, bitmap.width, bitmap.height, x, y, dw, dh);
+  const y = data.Actor_Y + (this.height - (bitmap.height * scale)) - 24;
+  this.contents.blt(bitmap, sx, sy, bitmap.width, bitmap.height, x, y, dw, dh);
 };
 
 Window_Result.prototype.drawActorFace = function(x, y, width, height, mode) {
+  const actor = this._actor;
   if (mode || BattleManager.resultPage > 0) {
-    this.drawFace(this._actor.faceName(), this._actor.faceIndex(), x, y, width, height);
+    if (Imported.NUUN_ActorPicture && param.ActorPictureEXApp) {
+      this.drawFace(actor.getActorGraphicFace(), actor.getActorGraphicFaceIndex(), x, y, width, height);
+    } else {
+      this.drawFace(actor.faceName(), actor.faceIndex(), x, y, width, height);
+    }
   }
 };
 
@@ -2066,30 +2399,18 @@ Window_Result.prototype.drawActorLevel = function(x, y, mode) {
     if (level > actor._level) {
       this._levelUp = true;
       BattleManager._levelUpPageEnable = BattleManager._levelUpPageEnable === undefined || BattleManager._levelUpPageEnable === null ? param.LavelUpWindowShow : BattleManager._levelUpPageEnable;
-      for (let i = 0; i < 8; i++) {
-        oldStatus[i] = actor.param(i);
+      for (const data of param.VisibleStatus) {
+        oldStatus.push(this.getVisibleStatus(actor, data, true));
       }
       oldStatus.push(actor._level);
       this._actorResultWindow.actorOldStatus.push(oldStatus);
       this.changeTextColor(ColorManager.textColor(param.LevelUpValueColor));
       if (BattleManager._levelUpPageEnable) {
         this._actorResultWindow.actorLevelUp.push(actor);
-        if (Imported.NUUN_Base) {
-          if (!actor.resultActorImg || !Array.isArray(actor.resultActorImg.ActorImg) || !actor.resultActorBitmap) {//配列仕様前の判定
-            actor.initResultActorImg(actor.actorId());
-          }
-          if (actor.resultActorImg.ActorImg) {
-            if (this._resultActorImgWindow) {
-              this._resultActorImgWindow.loadActorImg(actor);
-            } else {
-              this.loadActorImg(actor);
-            }
-            if (!actor.resultActorBitmap) {
-              ImageManager.nuun_LoadPictures(actor.resultActorImg.ActorImg[actor.resultImgId]);
-            } else {
-              ImageManager.nuun_LoadPictures(actor.resultActorBitmap);
-            }
-          }
+        if (this._resultActorImgWindow) {
+          this._resultActorImgWindow.loadActorImg(actor);
+        } else {
+          this.loadActorImg(actor);
         }
       }
     } else {
@@ -2129,6 +2450,18 @@ Window_Result.prototype.drawGetItems = function(x, y, width) {
   }
 };
 
+Window_Result.prototype.drawGetStealItems = function(x, y, width) {
+  const items = BattleManager._rewards.stealItems;
+  const lineHeight = this.lineHeight();
+  this.drawText(param.GetItemName, x, y, width, "left");
+  if (items) {
+    for (let i = 0; items.length > i; i++) {
+      let y2 = y + lineHeight * (i + 1);
+      this.drawItemName(items[i], x, y2, width);
+    }
+  }
+};
+
 Window_Result.prototype.drawGainGold = function(date, x, y, width) {
   if (!isNaN(BattleManager._rewards.gold)) {
     const gold = date.GainParamEval ? eval(date.GainParamEval) : BattleManager._rewards.gold;
@@ -2155,7 +2488,8 @@ Window_Result.prototype.drawGainExp = function(date, x, y, width) {
 };
 
 Window_Result.prototype.drawPartyOriginalParam = function(date, x, y, width) {
-  if (!isNaN(BattleManager._rewards.exp)) {
+  const rewards = BattleManager._rewards;
+  if (rewards) {
     const result = eval(date.GainParamEval);
     this.changeTextColor(ColorManager.systemColor());
     if (date.GainParamName) {
@@ -2244,6 +2578,9 @@ Window_Result.prototype.drawActorCharacter = function(x, y, mode) {
 
 Window_Result.prototype.placeExpGauge = function(actor, x, y) {
   const type = 'result_exp'
+  if (Imported.NUUN_GaugeImage) {
+    this.placeGaugeImg(actor, type, x, y);
+  }
   const key = "resultActor%1-gauge-%2".format(actor.actorId(), type);
   const sprite = this.createInnerSprite(key, Sprite_ResultExpGauge);
   sprite.setup(actor, type);
@@ -2312,6 +2649,15 @@ Window_Result.prototype.paramName = function(params, option) {
     case 6:
     case 7:
       return TextManager.param(params);
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+      return TextManager.param(params - 10);
     case 20:
       return option;
     default:
@@ -2319,20 +2665,8 @@ Window_Result.prototype.paramName = function(params, option) {
   }
 };
 
-Window_Result.prototype.paramOld = function(params, oldStatus) {
-  switch (params) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-      return oldStatus[params];
-    default:
-      return null;
-  }
+Window_Result.prototype.paramOld = function(i, oldStatus) {
+  return oldStatus[i];
 };
 
 Window_Result.prototype.paramValue = function(params, option) {
@@ -2354,9 +2688,40 @@ Window_Result.prototype.paramValue = function(params, option) {
   }
 };
 
+Window_Result.prototype.getVisibleStatus = function(actor, data, mode) {
+  if (mode && !data.DifferenceVisible) {
+    return 0;
+  }
+  switch (data.StatusParamDate) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+      return actor.param(data.StatusParamDate);
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+      return actor.paramBase(data.StatusParamDate - 10);
+    case 20:
+      const dactor = actor.actor();
+      return eval(data.OriginalParamEval);
+    default:
+      return 0;
+  }
+};
+
 const _Window_Result_updateOpen = Window_Result.prototype.updateOpen;
 Window_Result.prototype.updateOpen = function() {
-  if ((param.PartyBackGroundImg || param.ActorBackGroundImg || param.ResultFadein) && this._opening) {
+  if ((param.PartyBackGroundImg || param.ActorBackGroundImg || param.ResultFadein) && this.resultFadein) {
     this.openness = 255;
     this.openOpacity += 32;
     if (param.PartyBackGroundImg || param.ActorBackGroundImg) {
@@ -2364,17 +2729,36 @@ Window_Result.prototype.updateOpen = function() {
     } else if (!param.PartyBackGroundImg && !param.ActorBackGroundImg) {
       this.opacity = this.openOpacity;
     }
+    if (this.isResultFadein()) {
+      this.resultFadein = false;
+    }
   }
   _Window_Result_updateOpen.call(this);
 };
 
 const _Window_Result_isOpen = Window_Result.prototype.isOpen;
 Window_Result.prototype.isOpen = function() {
-  return param.ResultFadein || param.PartyBackGroundImg || param.ActorBackGroundImg ? this.openOpacity >= 255 : _Window_Result_isOpen.call(this);
+  return this.isFadein() ? this.isResultFadein() && _Window_Result_isOpen.call(this) : _Window_Result_isOpen.call(this);
+};
+
+Window_Result.prototype.isResultFadein = function() {
+  return this.openOpacity >= 255;
 };
 
 Window_Result.prototype.setActorResultWindow = function(actorResultWindow) {
   this._actorResultWindow = actorResultWindow;
+};
+
+const _Window_Result_open = Window_Result.prototype.open;
+Window_Result.prototype.open = function() {
+  _Window_Result_open.call(this);
+  if (this.isFadein() && !this.resultFadein) {
+    this.resultFadein = true;
+  }
+};
+
+Window_Result.prototype.isFadein = function() {
+  return param.ResultFadein || param.PartyBackGroundImg || param.ActorBackGroundImg;
 };
 
 function Window_ActorResult() {
@@ -2392,7 +2776,7 @@ Window_ActorResult.prototype.initialize = function(rect) {
 };
 
 Window_ActorResult.prototype.resultSkin = function() {
-  return param.ResultMainWindowsSkin;
+  return param.ResultLevelWindowsSkin;
 };
 
 Window_ActorResult.prototype.refresh = function() {
@@ -2428,11 +2812,11 @@ Window_ActorResult.prototype.drawActorStatusLevel = function(x, y) {
   this.changeTextColor(ColorManager.systemColor());
   this.drawText(TextManager.levelA, x, y, 48);
   this.resetTextColor();
-  this.drawText(oldStatus[oldStatus.length - 1], x + 48, y, 100, "left");
+  this.drawText(oldStatus[oldStatus.length - 1], x + 48, y, param.LevelUpWidth, "left");
   this.changeTextColor(ColorManager.systemColor());
-  this.drawText("→", x + 48, y, 100, "center");
+  this.drawText("→", x + 48, y, param.LevelUpWidth, "center");
   this.changeTextColor(ColorManager.textColor(param.DifferenceStatusColor));
-  this.drawText(this._actor._level, x + 48, y, 100, "right");
+  this.drawText(this._actor._level, x + 48, y, param.LevelUpWidth, "right");
   this.resetTextColor();
 };
 
@@ -2442,17 +2826,17 @@ Window_ActorResult.prototype.drawActorStatus = function(x, y, width) {
   const lineHeight = this.lineHeight() + param.StatusFontSize;
   this.contents.fontSize = $gameSystem.mainFontSize() + param.StatusFontSize;
   const oldStatus = this.actorOldStatus[BattleManager.resultPage - 1];
-  visibleStatus.forEach(status => {
+  visibleStatus.forEach((status, i) => {
     const name = this.paramName(status.StatusParamDate, status.OriginalParamName);
-    const oldValue = this.paramOld(status.StatusParamDate, oldStatus);
-    const value = this.paramValue(status.StatusParamDate, status.OriginalParamEval);
+    const oldValue = this.paramOld(i, oldStatus);
+    const value = this.getVisibleStatus(this._actor, status, false);
     this.changeTextColor(ColorManager.systemColor());
     this.drawText(name, x, y2, width - 200);
     this.resetTextColor();
-    if (status.DifferenceVisible && oldValue) {
+    if (status.DifferenceVisible && oldValue !== 0) {
       this.drawText(oldValue, x + (width - 200), y2, 60, "left");
       this.changeTextColor(ColorManager.systemColor());
-      this.drawText("→", x + (width - 110), y2, width - 160, "left");
+      this.drawText("\u2192", x + (width - 110), y2, width - 160, "left");
       if (oldValue < value) {
         this.changeTextColor(ColorManager.textColor(param.DifferenceStatusColor));
       } else {
@@ -2483,6 +2867,14 @@ Window_ActorResult.prototype.changeActorSound = function() {
   }
 };
 
+Window_ActorResult.prototype.isOpen = function() {
+  return Window_StatusBase.prototype.isOpen.call(this);
+};
+
+Window_ActorResult.prototype.updateOpen = function() {
+  Window_StatusBase.prototype.updateOpen.call(this);
+};
+
 
 function Window_ResultDropItem() {
   this.initialize(...arguments);
@@ -2496,9 +2888,16 @@ Window_ResultDropItem.prototype.initialize = function(rect) {
   this.openness = 0;
   this.page = 0;
   this.maxPage = 0;
-  this.dropItemRows = Math.floor((this.innerHeight - this.lineHeight() * (this.gainParamLength() + 1)) / this.lineHeight());
+  this.dropItemRows = param.DropItemRows > 0 ? param.DropItemRows : this.getDropItemRows();
+  this.dropStealItemRows = this.getDropItemRows() - this.dropItemRows - 1;
   this.opacity = 0;
   this.frameVisible = false;
+  this.dropList = [];
+  this.stealList = [];
+};
+
+Window_ResultDropItem.prototype.getDropItemRows = function() {
+  return Math.floor((this.innerHeight - this.lineHeight() * (this.gainParamLength() + 1)) / this.lineHeight());
 };
 
 Window_ResultDropItem.prototype.actorContentWidth = function(rect) {
@@ -2514,28 +2913,45 @@ Window_ResultDropItem.prototype.setWindowResult = function(windowResult) {
 };
 
 Window_ResultDropItem.prototype.maxPages = function() {
-  return Math.ceil(BattleManager._rewards.items.length / this.dropItemRows);
+  if (param.StealItemVisible && Imported.NUUN_StealableItems) {
+    return Math.max(this.maxDropPages(), this.maxStealPages());
+  } else {
+    return this.maxDropPages();
+  }
+};
+
+Window_ResultDropItem.prototype.maxDropPages = function() {
+  return Math.ceil(this.dropList.length / this.dropItemRows);
+};
+
+Window_ResultDropItem.prototype.maxStealPages = function() {
+  return Math.ceil(this.stealList.length / this.dropStealItemRows);
 };
 
 Window_ResultDropItem.prototype.refresh = function() {
   this.contents.clear();
+  this.getItemDropList();
   const rect = this.itemRect(0);
   const lineHeight = this.lineHeight();
   const itemPadding = this.itemPadding();
   const width = this.actorContentWidth(rect);
   this.drawGetItems(rect.x + width, rect.y, rect.width - width - rect.x);
+  if (param.StealItemVisible && Imported.NUUN_StealableItems) {
+    this.getItemStealList();
+    this.drawGetStealItems(rect.x + width, rect.y + lineHeight * (this.dropItemRows + 1), rect.width - width - rect.x);
+  }
 };
 
 Window_ResultDropItem.prototype.drawGetItems = function(x, y, width) {
-  const items = BattleManager._rewards.items;
+  const items = this.dropList;
   const lineHeight = this.lineHeight();
-  const maxPage = this.maxPages();
+  const maxPage = this.maxDropPages();
   y += this.gainParamLength() * lineHeight + param.DropItem_Y;
   this.changeTextColor(ColorManager.systemColor());
   this.drawText(param.GetItemName, x, y, width - 48, "left");
   this.resetTextColor();
-  if (items) {
-    const index = this.dropItemRows * this.page;
+  if (items.length > 0) {
+    const index = this.dropItemRows * Math.min(this.page, maxPage - 1);
     const maxItems = Math.min(this.dropItemRows, items.length - index);
     if (maxPage > 1) {
       this.drawText(this.page + 1 +"/"+maxPage, x, y, width, "right");
@@ -2543,9 +2959,90 @@ Window_ResultDropItem.prototype.drawGetItems = function(x, y, width) {
     for (let i = 0; maxItems > i; i++) {
       let y2 = y + lineHeight * (i + 1);
       this.resetTextColor();
-      this.drawItemName(items[i + index], x, y2, width);
+      if (param.DropItemNumVisible) {
+        const num = String(param.DropItemNumx + items[i + index].num);
+        const textWidth = this.textWidth(num) + this.itemPadding();
+        this.drawItemName(items[i + index].item, x, y2, width - textWidth);
+        this.drawText(num, x + textWidth, y2, width - textWidth, 'right');
+      } else {
+        this.drawItemName(items[i + index].item, x, y2, width);
+      }
     }
   }
+};
+
+Window_ResultDropItem.prototype.drawGetStealItems = function(x, y, width) {
+  const items = this.stealList;
+  const lineHeight = this.lineHeight();
+  const maxPage = this.maxStealPages();
+  y += this.gainParamLength() * lineHeight + param.DropItem_Y;
+  this.changeTextColor(ColorManager.systemColor());
+  this.drawText(param.GetStealItemName, x, y, width - 48, "left");
+  this.resetTextColor();
+  if (items.length > 0) {
+    const index = this.dropStealItemRows * Math.min(this.page, maxPage - 1);
+    const maxItems = Math.min(this.dropStealItemRows, items.length - index);
+    if (maxPage > 1) {
+      this.drawText(this.page + 1 +"/"+maxPage, x, y, width, "right");
+    }
+    for (let i = 0; maxItems > i; i++) {
+      let y2 = y + lineHeight * (i + 1);
+      this.resetTextColor();
+      if (param.StealItemNumVisible) {
+        if (items[i + index].type === 'gold') {
+          this.drawCurrencyValue(items[i + index].item, TextManager.currencyUnit, x, y2, width);
+        } else {
+          const num = String(param.StealItemNumx + items[i + index].num);
+          const textWidth = this.textWidth(num) + this.itemPadding();
+          this.drawItemName(items[i + index].item, x, y2, width - textWidth);
+          this.drawText(num, x + textWidth, y2, width - textWidth, 'right');
+        }
+      } else {
+        if (items[i + index].type === 'gold') {
+          this.drawCurrencyValue(items[i + index].item, TextManager.currencyUnit, x, y2, width);
+        } else {
+          this.drawItemName(items[i + index].item, x, y2, width);
+        }
+      }
+    }
+  }
+};
+
+Window_ResultDropItem.prototype.getItemDropList = function() {
+  const drop = BattleManager._rewards.items;
+  const dropList = [];
+  drop.forEach(item => {
+    const index = dropList.findIndex(ditem => item.id === ditem.item.id);
+    if (param.DropItemNumVisible && index >= 0) {
+      dropList[index].num++;
+    } else {
+      dropList.push({item: item, num: 1});
+    }
+  });
+  this.dropList = dropList;
+};
+
+Window_ResultDropItem.prototype.getItemStealList = function() {
+  const steal = BattleManager._rewards.stealItems;
+  const stealList = [];
+  steal.forEach(item => {
+    if (item.money) {
+      const index = stealList.findIndex(sitem => sitem.type === 'gold');
+      if (param.StealItemNumVisible && index >= 0) {
+        stealList[index].item += item.money;
+      } else {
+        stealList.push({item: item.money, type:'gold'});
+      }
+    } else {
+      const index = stealList.findIndex(sitem => item.id === sitem.item.id);
+      if (param.StealItemNumVisible && index >= 0) {
+        stealList[index].num++;
+      } else {
+        stealList.push({item: item, num: 1, type:'item'});
+      }
+    }
+  });
+  this.stealList = stealList;
 };
 
 Window_ResultDropItem.prototype.drawItemName = function(item, x, y, width) {
@@ -2553,6 +3050,15 @@ Window_ResultDropItem.prototype.drawItemName = function(item, x, y, width) {
     this.nameColor = ColorManager.textColor(Number(item.meta.ResultItemColor))
   }
   Window_Base.prototype.drawItemName.call(this, item, x, y, width);
+};
+
+Window_ResultDropItem.prototype.drawCurrencyValue = function(value, unit, x, y, width) {
+  const unitWidth = Math.min(80, this.textWidth(unit));
+  const valueWidth = this.textWidth(value);
+  this.resetTextColor();
+  this.drawText(value, x, y, width - unitWidth - 6, "left");
+  this.changeTextColor(ColorManager.systemColor());
+  this.drawText(unit, x + valueWidth, y, unitWidth, "left");
 };
 
 
@@ -2676,7 +3182,6 @@ Sprite_ResultExpGauge.prototype.bitmapWidth = function() {
   return gaugeWidth;
 };
 
-
 Sprite_ResultExpGauge.prototype.gaugeX = function() {
   return param.Gauge_Margin;
 };
@@ -2715,7 +3220,7 @@ const _Sprite_Gauge_drawValue = Sprite_Gauge.prototype.drawValue;
 Sprite_Gauge.prototype.drawValue = function() {
   if (this._statusType === "result_exp") {
     const width = this.bitmapWidth();
-    const height = this.bitmapHeight();
+    const height = typeof this.textHeight === 'function' ? this.textHeight() : this.bitmapHeight();
     this._resultExpMoveMode = param.GaugeRefreshFrame > 0 && param.GaugeValueShow ? true : false;
     let expValue = this.currentValue();
     if (param.GaugeValueShow > 0) {
@@ -2821,12 +3326,7 @@ Sprite_ResultExpGauge.prototype.smoothSpeed = function() {
 };
 
 Sprite_ResultExpGauge.prototype.smoothness = function() {
-  return Math.max(Math.floor(Sprite_Gauge.prototype.smoothness.call(this) * this.smoothSpeed()), 1);
-};
-
-const _Sprite_Gauge_smoothness = Sprite_Gauge.prototype.smoothness;
-Sprite_Gauge.prototype.smoothness = function() {
-  return this._statusType === "result_exp" ? param.GaugeRefreshFrame : _Sprite_Gauge_smoothness.call(this);
+  return Math.max(Math.floor(param.GaugeRefreshFrame * this.smoothSpeed()), 1);
 };
 
 Sprite_ResultExpGauge.prototype.currentDecimal = function(val) {
@@ -2899,6 +3399,7 @@ BattleManager.initMembers = function() {
   this.onResult = false;
   this._victoryOn = false;
   this._victoryBGMOn = false;
+  this._victoryStart = false;
   this.resultRefresh = 0;
   this.resultBusy = this.setResultBusy();
   this.resultPage = 0;
@@ -2934,6 +3435,7 @@ BattleManager.processVictory = function() {
     this.resultBusy--;
   }
   if (this.resultBusy === 0) {
+    _BattleManager_processVictory.call(this);
     this.displayVictoryOnBusy();
   }
 };
@@ -2944,13 +3446,21 @@ BattleManager.displayVictoryNoBusy = function() {
   this.playVictoryMe();
   this.replayBgmAndBgs();
   this.makeRewards();
+  this._victoryStart = true;
 };
 
 BattleManager.displayVictoryOnBusy = function() {
-  this.displayVictoryMessage();
-  this.displayRewards();
-  this.gainRewards();
-  this.endBattle(0);
+  this._victoryStart = false;
+};
+
+const _BattleManager_makeRewards = BattleManager.makeRewards;
+BattleManager.makeRewards = function() {
+  if (!this._victoryStart) {
+    _BattleManager_makeRewards.call(this);
+    if (param.StealItemVisible && Imported.NUUN_StealableItems) {
+      this._rewards.stealItems = $gameTroop.getStealItems();
+    }
+  }
 };
 
 BattleManager.displayVictoryMessage = function() {
@@ -2975,6 +3485,9 @@ BattleManager.isBusy = function() {
 
 const _BattleManager_replayBgmAndBgs = BattleManager.replayBgmAndBgs;
 BattleManager.replayBgmAndBgs = function() {
+  if (this._victoryStart) {
+    return;
+  }
   this._victoryBGMEnable = (this._victoryBGMEnable === undefined || this._victoryBGMEnable === null) ? true : this._victoryBGMEnable;
   if (this._victoryBGMEnable && this._victoryOn) {
     if (this._victoryBgmDate && this._victoryBgmDate.name) {
@@ -3027,6 +3540,9 @@ BattleManager.levelUpSeSelect = function(bgmSe) {
 
 const _BattleManager_playVictoryMe = BattleManager.playVictoryMe;
 BattleManager.playVictoryMe = function() {
+  if (this._victoryStart) {
+    return;
+  }
   if (!this._noVictoryME) {
     _BattleManager_playVictoryMe.call(this);
   }
@@ -3058,4 +3574,14 @@ const _BattleManager_isBattleEnd = BattleManager.isBattleEnd;
 BattleManager.isBattleEnd = function() {
   return _BattleManager_isBattleEnd.call(this) || this._victoryOn;
 };
+
+function battlreActorPicture(id) {//立ち絵表示EX用
+  const actors = param.ActorPictureData;
+  const find = actors.find(actor => actor.actorId === id);
+  if (!find) {
+    return {Actor_X: 0, Actor_Y: 0, Img_SX: 0, Img_SY: 0, Actor_Scale: 100};
+  }
+  return find;
+};
+
 })();

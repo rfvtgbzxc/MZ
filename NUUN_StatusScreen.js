@@ -10,7 +10,7 @@
  * @target MZ
  * @plugindesc ステータス画面表示拡張
  * @author NUUN
- * @version 2.3.7
+ * @version 2.4.3
  * @base NUUN_Base
  * @orderAfter NUUN_Base
  * 
@@ -37,10 +37,24 @@
  * 【システム項目文字色の設定】
  * 名称及びシステム文字の文字色を指定します。
  * 
- * 【評価式の設定】
+ * 【評価式or文字列の設定】
  * 評価式を記入します。オリジナルパラメータでは必ず記入してください。
  * 能力値、追加能力値、特殊能力値、任意ステータスで有効ですが無記入の場合は任意ステータス以外は自動的に参照されます。
+ * 
+ * this._actorまたはactor 表示中のアクターのゲームデータ
+ * dactor 表示中のアクターのデータベース
+ * 
+ * ステート耐性
+ * rate ステート有効度
+ * 
+ * ステート耐性、属性耐性
  * r:属性、ステート耐性値　全ての耐性値を乗算した数値
+ * 
+ * ステート
+ * 表示したいステートIDを,区切りで指定します。
+ * 例 "1,5,11" 必ず''または""で囲む
+ * "1-10" ステートID1～10番まで表示
+ * "3-11,15"ステートID3～11,15番を表示
  * 
  * 【記述欄設定】
  * 記述欄はプラグインパラメータ「記述欄タグ名」に任意の文字列を記入してください。一部文字列は使用できない場合も
@@ -87,11 +101,6 @@
  * <desc1:ああああ> desc1とタグ付けされた項目に「ああああ」が表示されます。
  * 文章を表示させる場合は<desc1:ああああ>と記入してください。
  * 
- * 独自のパラメータ
- * this._actor 表示中のアクターのゲームデータ
- * dactor 表示中のアクターのデータベース
- * ステート耐性のみ
- * rate ステート有効度
  * 
  * キーボード操作
  * QWキー　キャラ切り替え
@@ -105,11 +114,18 @@
  * 利用規約
  * このプラグインはMITライセンスで配布しています。
  * 
- * Ver.2.3.2以降ではNUUN_Base Ver.1.4.1以降が必要となります。
- * 
  * 更新履歴
- * 2022/6/15 Ver.2.3.7
- * 評価式に文字列を記入したときにNaNと表示されてしまう問題を修正。
+ * 2022/9/23 Ver.2.4.3
+ * 一部プラグインの競合対策。
+ * 2022/8/22 Ver.2.4.2
+ * 制御文字でフォントサイズ変更をした後に、項目のフォントのサイズが変化してしまう問題を修正。
+ * 2022/7/26 Ver.2.4.1
+ * オリジナルパラメータの評価式が適用されていなかった問題を修正。
+ * 2022/7/23 Ver.2.4.0
+ * 評価式の仕様を変更。
+ * ステートのアイコンを表示したいステートのみ表示する機能を追加。
+ * バトルステータスに表示されるステートの表示をメニュー画面上に表示できる機能を追加。
+ * 経験値の%表示時に小数点が指定した小数点数を無視して表示されてしまう問題を修正。
  * 2022/3/22 Ver.2.3.6
  * 属性、ステート耐性値の取得値を変更。
  * 2022/2/16 Ver.2.3.5
@@ -882,8 +898,10 @@
  * @value 3
  * @option レベル(4)(5)(6)(7)(15)
  * @value 4
- * @option ステート(4)(5)(6)(7)(15)
+ * @option ステート(3※1)(4)(5)(6)(7)(15)
  * @value 5
+ * @option ステート(戦闘用と同じ表示)(4)(5)(6)(7)
+ * @value 6
  * @option ＨＰ(4)(5)(6)(7)
  * @value 10
  * @option ＭＰ(4)(5)(6)(7)
@@ -970,10 +988,6 @@
  * @value 101
  * @option サイドビューアクター画像(4)(5)(6)(7)(8)(10)
  * @value 102
- * @option 画像（未実装）
- * @value 103
- * @option ステータスレーダーチャート（未実装）
- * @value 200
  * @option 属性耐性レーダーチャート(4)(5)(6)(7)(8)(10)(15)
  * @value 201
  * @option ステート耐性レーダーチャート(4)(5)(6)(7)(8)(10)(15)
@@ -996,9 +1010,9 @@
  * @default
  * 
  * @param DetaEval
- * @desc パラメータ評価式を設定します。
- * @text パラメータ評価式(3)
- * @type combo[]
+ * @desc 評価式または文字列を記入します。
+ * @text 評価式or文字列(3)
+ * @type combo
  * @option '$gameVariables.value(0);//ゲーム変数'
  * @option actor.isStateResist(stateId) ? "無効" : r;//ステート耐性
  * @default 
@@ -1319,15 +1333,6 @@ Scene_Status.prototype.setBackGround = function(sprite) {
   }
 };
 
-Scene_Status.prototype.statusWindowRect = function() {
-  const wx = 0;
-  //const wy = this.mainAreaTop() + this.isPage() ? this._statusPageWindow.height : 0;
-  const wy = this.mainAreaTop() + this.isPage() ? 0 : 0;
-  const ww = Graphics.boxWidth;
-  const wh = Graphics.boxHeight - wy;
-  return new Rectangle(wx, wy, ww, wh);
-};
-
 Scene_Status.prototype.createPageStatusWindow = function() {
   if (this.isPage()) {
     //const rect = this.statusPageWindowRect();
@@ -1338,6 +1343,7 @@ Scene_Status.prototype.createPageStatusWindow = function() {
 
 Scene_Status.prototype.statusWindowRect = function() {
   const wx = 0;
+  //const wy = this.mainAreaTop() + this.isPage() ? this._statusPageWindow.height : 0;
   const wy = this.mainAreaTop();
   const ww = Graphics.boxWidth;
   const wh = Graphics.boxHeight - wy;
@@ -1367,14 +1373,19 @@ Scene_Status.prototype.createStatusEquipWindow = function() {
 Scene_Status.prototype.createStatusButton = function() {
   if(this.maxPage() > 1 && ConfigManager.touchUI) {
     this._statusupButton = new Sprite_Button("up");
-    this._statusupButton.x = this.arePageButtonsEnabled() ? 24 + this._pageupButton.width + this._pagedownButton.width : 0;
-    this._statusupButton.y = this.buttonY();
-    const statusupRight = this._statusupButton.x + this._statusupButton.width;
     this._statusdownButton = new Sprite_Button("down");
-    this._statusdownButton.x = statusupRight + 4;
-    this._statusdownButton.y = this.buttonY();
     this.addWindow(this._statusupButton);
     this.addWindow(this._statusdownButton);
+    if (this.arePageButtonsEnabled() && this._pageupButton.x > Graphics.width / 2) {
+      this._pageupButton.x -= 40 + this._pageupButton.width + this._pagedownButton.width;
+      this._pagedownButton.x -= 40 + this._pageupButton.width + this._pagedownButton.width;
+    }
+    const y = this.buttonY();
+    this._statusupButton.x = this._pageupButton.x + (this.arePageButtonsEnabled() ? 24 + this._pageupButton.width + this._pagedownButton.width : 0);
+    const statusupRight = this._statusupButton.x + this._statusupButton.width;
+    this._statusdownButton.x = statusupRight + 4;
+    this._statusupButton.y = y;
+    this._statusdownButton.y = y;
     this._statusupButton.setClickHandler(this.updateStatusPageup.bind(this));
     this._statusdownButton.setClickHandler(this.updateStatusPagedown.bind(this));
   }
@@ -1632,7 +1643,10 @@ Window_Status.prototype.dateDisplay = function(list, x, y, width) {
       this.drawActorLevel(this._actor, x, y, width);
       break;
     case 5:
-      this.drawActorIcons(this._actor, x, y, width);
+      this.drawActorIcons(this._actor, x, y, width, list);
+      break;
+    case 6:
+      this.drawPlaceStateIcon(x, y, this._actor);
       break;
     case 10:
     case 11:
@@ -1794,6 +1808,7 @@ Window_Status.prototype.paramNameShow = function(list, actor, params) {
 };
 
 Window_Status.prototype.paramShow = function(list, actor, params, detaEval) {
+  const dactor = actor.actor();
   if (detaEval) {
     return eval(detaEval);
   }
@@ -1856,7 +1871,36 @@ Window_Status.prototype.drawActorFace = function(actor, x, y, width, height) {
   }
 };
 
+
+
+Window_Status.prototype.drawActorIcons = function(actor, x, y, width, list) {
+  let icons = [];
+  let states = [];
+  const iconWidth = ImageManager.iconWidth;
+  const dataEval = list.DetaEval;
+  if (dataEval) {
+    const stateList = dataEval.split(',');
+    for (const id of stateList) {
+      Array.prototype.push.apply(states, this.nuun_getListIdData(id));
+    }
+    icons = actor.allIcons().filter(icon => states.some(id => $dataStates[id].iconIndex === icon)).slice(0, Math.floor(width / iconWidth));
+    let iconX = x;
+    for (const icon of icons) {
+        this.drawIcon(icon, iconX, y + 2);
+        iconX += iconWidth;
+    }
+  } else {
+    Window_StatusBase.prototype.drawActorIcons.call(this, actor, x, y, width);
+  }
+};
+
+Window_Status.prototype.drawPlaceStateIcon = function(x, y, actor) {
+  const hw = Math.floor(ImageManager.iconWidth / 2);
+  this.placeStateIcon(actor, x + hw, y + hw);
+};
+
 Window_Status.prototype.drawParams = function(list, actor, x, y, width, params) {
+  const dactor = actor.actor();
   if (params === 0) {
     this.placeGauge(actor, "hp", x, y);
   } else if (params === 1) {
@@ -1868,7 +1912,7 @@ Window_Status.prototype.drawParams = function(list, actor, x, y, width, params) 
     this.drawContentsBackground(list.Back, x, y, width);
     x = this.contensX(x);
     width = this.contensWidth(width);
-    const dataEval = list.DetaEval && list.DetaEval[0] ? list.DetaEval[0] : undefined;
+    const dataEval = list.DetaEval;
     let text = this.paramShow(list, actor, params, dataEval);
     if (text !== undefined) {
       if (params >= 10) {
@@ -1893,6 +1937,7 @@ Window_Status.prototype.drawParams = function(list, actor, x, y, width, params) 
 };
 
 Window_Status.prototype.drawEquip = function(list, actor, x, y, width) {
+  const dactor = actor.actor();
   this.contentsFontSize(list);
   const lineHeight = this.lineHeight();
   const equips = this._actor.equips();
@@ -1943,6 +1988,7 @@ Window_Status.prototype.drawProfile = function(list, actor, x, y, width) {
   const profileText = actor.profile();
   this.resetTextColor();
   this.drawTextEx(profileText, x, y, width);
+  this.resetFontSettings();
 };
 
 Window_Status.prototype.drawDesc = function(list, actor, x, y, width) {
@@ -1958,6 +2004,7 @@ Window_Status.prototype.drawDesc = function(list, actor, x, y, width) {
   if (actor.actor().meta[method]) {
     this.drawTextEx(actor.actor().meta[method], x, y, width);
   }
+  this.resetFontSettings();
 };
 
 Window_Status.prototype.drawName = function(list, x, y, width) {
@@ -1983,7 +2030,7 @@ Window_Status.prototype.drawOriginalStatus = function(list, actor, x, y, width) 
     this.changeTextColor(NuunManager.getColorCode(list.NameColor));
     this.drawText(nameText , x, y, textWidth);
   }
-  let text = list.DetaEval && list.DetaEval[0] ? eval(list.DetaEval[0]) : undefined;
+  let text = list.DetaEval ? eval(list.DetaEval) : undefined;
   if (text !== undefined) {
     if (typeof(text) === 'number') {
       text = NuunManager.numPercentage(text, (list.Decimal - 2) || 0, DecimalMode);
@@ -1995,6 +2042,7 @@ Window_Status.prototype.drawOriginalStatus = function(list, actor, x, y, width) 
 };
 
 Window_Status.prototype.drawElement = function(list, actor, x, y, width) {
+  const dactor = actor.actor();
   const lineHeight = this.lineHeight();
   this.contentsFontSize(list);
   const text = list.ParamNamee;
@@ -2031,7 +2079,7 @@ Window_Status.prototype.drawElement = function(list, actor, x, y, width) {
         rate = NuunManager.numPercentage(rate, list.Decimal || 0, DecimalMode);
         const r = rate;
         rate += list.paramUnit ? String(list.paramUnit) : " %";
-        const rateText = list.DetaEval && list.DetaEval[0] ? eval(list.DetaEval[0]) : rate;
+        const rateText = list.DetaEval ? eval(list.DetaEval) : rate;
         this.resetTextColor();
         this.drawText(rateText, x3 + textWidth + 8, y2, width2 - textWidth - 8, "right");
       }
@@ -2040,6 +2088,7 @@ Window_Status.prototype.drawElement = function(list, actor, x, y, width) {
 };
 
 Window_Status.prototype.drawStates = function(list, actor, x, y, width) {
+  const dactor = actor.actor();
   const lineHeight = this.lineHeight();
   this.contentsFontSize(list);
   const text = list.ParamName;
@@ -2076,7 +2125,7 @@ Window_Status.prototype.drawStates = function(list, actor, x, y, width) {
         rate = NuunManager.numPercentage(rate, list.Decimal || 0, DecimalMode);
         const r = rate;
         rate += list.paramUnit ? String(list.paramUnit) : " %";
-        const rateText = list.DetaEval && list.DetaEval[0] ? eval(list.DetaEval[0]) : rate;
+        const rateText = list.DetaEval ? eval(list.DetaEval) : rate;
         if (actor.isStateResist(stateId)) {
           this.changeTextColor(NuunManager.getColorCode(StateResistColor));
         } else {
@@ -2286,7 +2335,6 @@ Window_Status.prototype.characterSwitchingHelp = function(list, x, y, width) {
 };
 
 Window_Status.prototype.statusParamDecimal = function(val, decimal) {
-  if (isNaN(val)) { return val }
   decimal = decimal !== undefined ? Number(decimal) : 0;
   if (DecimalMode) {
     return Math.round(val * (decimal > 0 ? Math.pow(10, decimal) : 1)) / (decimal > 0 ? Math.pow(10, decimal) : 1);
@@ -2386,7 +2434,7 @@ Sprite_StatusExpGauge.prototype.drawValue = function() {
   const height = typeof this.textHeight === 'function' ? this.textHeight() : this.bitmapHeight();
   this.setupValueFont();
   if (ExpPercent) {
-    currentValue = this._battler.isMaxLevel() ? "100%" : NuunManager.numPercentage(this.currentPercent(), EXPDecimal, DecimalMode) * 100 +"%";
+    currentValue = this._battler.isMaxLevel() ? "100%" : NuunManager.numPercentage(this.currentPercent(), EXPDecimal, DecimalMode) +"%";
   } else {
     currentValue = this._battler.isMaxLevel() ? "-------" : this._battler.nextRequiredExp();
   }
@@ -2394,7 +2442,7 @@ Sprite_StatusExpGauge.prototype.drawValue = function() {
 };
 
 Sprite_StatusExpGauge.prototype.currentPercent = function() {
-  return (this._battler.currentExp() - this._battler.currentLevelExp()) / (this._battler.nextLevelExp() - this._battler.currentLevelExp());
+  return (this._battler.currentExp() - this._battler.currentLevelExp()) / (this._battler.nextLevelExp() - this._battler.currentLevelExp()) * 100;
 };
 
 Sprite_StatusExpGauge.prototype.currentDecimal = function(val) {

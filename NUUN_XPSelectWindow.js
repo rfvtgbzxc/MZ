@@ -12,7 +12,7 @@
  * @author NUUN
  * @base NUUN_Base
  * @orderAfter NUUN_Base
- * @version 1.0.5
+ * @version 1.1.2
  * 
  * @help
  * 敵、味方の対象選択時のウィンドウをXP風に変更します。
@@ -29,6 +29,13 @@
  * このプラグインはMITライセンスで配布しています。
  * 
  * 更新履歴
+ * 2022/9/4 Ver.1.1.2
+ * 特定の場面でウィンドウが表示さてたままになってしまう問題を修正。
+ * 2022/8/26 Ver.1.1.1
+ * スクロール時のSEを再生しない機能を追加。
+ * アクターコマンドを開くと対象選択時のカーソルSEが再生しまう問題を修正。
+ * 2022/8/24 Ver.1.1.0
+ * 敵対象選択時にスクロール選択出来る機能を追加。
  * 2022/6/5 Ver.1.0.5
  * 微修正。
  * 2022/4/2 Ver.1.0.4
@@ -127,6 +134,12 @@
  * @max 9999
  * @min 0
  * 
+ * @param EnemySelectdScrollSE
+ * @desc 敵対象選択時のスクロールをしたときにカーソルSEをならします。
+ * @text 敵対象スクロール時カーソルSE_ON
+ * @type boolean
+ * @default true
+ * 
  * @param ActorPictureSetting
  * @text 立ち絵、顔グラ表示EX設定
  * @default ------------------------------
@@ -215,6 +228,7 @@ const EnemySelect_Width = Number(parameters['EnemySelect_Width'] || 0);
 const ActorData = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['ActorData'])) : null) || [];
 const EnemyData = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['EnemyData'])) : null) || [];
 const DynamicFace = eval(parameters['DynamicFace'] || "true");
+const EnemySelectdScrollSE = eval(parameters['EnemySelectdScrollSE'] || "true");
 let contentsWidth = 0;
 
 function actorSelectWindowWidth() {
@@ -334,6 +348,14 @@ Scene_Battle.prototype.onActorCancel = function() {
     }
 };
 
+const _Scene_Battle_hideSubInputWindows = Scene_Battle.prototype.hideSubInputWindows;
+Scene_Battle.prototype.hideSubInputWindows = function() {
+    _Scene_Battle_hideSubInputWindows.call(this);
+    this._actorSelectWindow.deactivate();
+    this._enemySelectWindow.deactivate();
+    this._actorSelectWindow.hide();
+    this._enemySelectWindow.hide();
+};
 
 Scene_Battle.prototype.XPActorSelectY = function() {
     switch (XPSelectPosition) {
@@ -626,6 +648,25 @@ Window_BattleEnemy.prototype.select = function(index) {
 
 Window_BattleEnemy.prototype.maxCols = function() {
     return this.maxItems();
+};
+
+Window_BattleEnemy.prototype.processWheelScroll = function() {
+    if (this.isWheelScrollEnabled() && this.active) {
+        const threshold = 20;
+        const oldIndex = this.index();
+        if (TouchInput.wheelY >= threshold) {
+            this.cursorRight(Input.isTriggered("right"));
+            if (EnemySelectdScrollSE && this.index() !== oldIndex) {
+                this.playCursorSound();
+            }
+        }
+        if (TouchInput.wheelY <= -threshold) {
+            this.cursorLeft(Input.isTriggered("left"));
+            if (EnemySelectdScrollSE && this.index() !== oldIndex) {
+                this.playCursorSound();
+            }
+        }
+    }
 };
 
 function Sprite_BattlerName() {

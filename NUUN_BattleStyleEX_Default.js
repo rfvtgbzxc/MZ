@@ -12,7 +12,7 @@
  * @author NUUN
  * @base NUUN_BattleStyleEX
  * @orderBefore NUUN_BattleStyleEX
- * @version 1.5.1
+ * @version 1.7.2
  * 
  * @help
  * 戦闘画面を拡張します。
@@ -48,7 +48,38 @@
  * 木星ペンギン氏作疑似３Dバトルプラグインと併用して、フロントビューで味方にアニメーションを表示させる場合は
  * 別途バトルスタイル拡張疑似３Dバトル併用パッチを導入してください。
  * 
+ * Ver.1.6.0でバトルステータスのデフォルトの設定を表示ステータス設定での設定に変更しております。
+ * 旧設定で設定している場合でアクター座標、画像設定で追加する場合は、表示ステータス設定を空欄にしてください。
+ * 
+ * ※1
+ * 0:HP上昇 1:MP上昇 2:攻撃力上昇 3:防御力上昇 4:魔法力上昇 5:魔法防御上昇 6:敏捷性上昇 7:運上昇
+ * 10:HP減少 11:MP減少 12:攻撃力減少 13:防御力減少 14:魔法力減少 15:魔法防御減少 16:敏捷性減少 17:運減少
+ * 
  * 更新履歴
+ * 2022/10/9 Ver.1.7.2
+ * アクターステータスのアクター毎にウィンドウを表示する機能を追加。
+ * 2022/9/17 Ver.1.7.1
+ * 敵対象選択画面のモンスター名の表示をアクター名と同じ仕様にする機能を追加。
+ * 2022/8/25 Ver.1.7.0
+ * アクター画像変化条件に防御時、反撃時、魔法反射時を追加。
+ * 2022/8/24 Ver.1.6.3
+ * 敵出現、アイテムウィンドウのXY座標が適用されていなかった問題を修正。
+ * 2022/8/7 Ver.1.6.2
+ * 戦闘終了時にアクターウィンドウを閉じる機能(コアスクリプトと同じ仕様)を追加。
+ * 2022/8/6 Ver.1.6.1
+ * ステート、ステート2に表示できるステート、バフのアイコンを指定および非表示にできる機能を追加。
+ * Ver.1.6.0での仕様変更によりステートの枠外表示を廃止。
+ * 2022/7/30 Ver.1.6.0
+ * 敵対象選択中にアクターコマンドが出るように修正。
+ * 表示ステータスにメニューで表示されるタイプのステートを表示する機能を追加。
+ * 表示ステータスに画像を追加。
+ * メンバー交代後にアクターの画像が変色してしまう問題を修正。
+ * 一部プラグインパラメータのデフォルト値の修正。
+ * アクター名に幅、フォントサイズが適用されていなかった問題を修正。
+ * 2022/7/23 Ver.1.5.3
+ * キャンセルボタンのX座標を調整できる機能を追加。
+ * 2022/7/18 Ver.1.5.2
+ * キャンセルボタンの表示位置を左か右か指定できる機能を追加。
  * 2022/6/24 Ver.1.5.1
  * 新規、更新後にアクターの画像がおかしくなる問題を修正。
  * 2022/6/19 Ver.1.5.0
@@ -418,6 +449,29 @@
  * @default true
  * @parent ActorCommandOption
  * 
+ * @param ButtonSetting
+ * @text ボタン設定
+ * @default ////////////////////////////////
+ * 
+ * @param ButtonMode
+ * @text キャンセルボタン表示位置
+ * @desc キャンセルボタンの表示位置。
+ * @type select
+ * @option 左
+ * @value 'left'
+ * @option 右
+ * @value 'right'
+ * @default 'right'
+ * @parent ButtonSetting
+ * 
+ * @param CancelButtonX
+ * @desc キャンセルボタンX座標（相対）。
+ * @text キャンセルボタンX座標（相対）
+ * @type number
+ * @default 0
+ * @min -9999
+ * @max 9999
+ * @parent ButtonSetting
  * 
  * @param ActorStatus
  * @text アクターステータス設定
@@ -475,6 +529,18 @@
  * @value 'right'
  * @default 'center'
  * @parent ActorStatus
+ * 
+ * @param ActorStatusActorWindow
+ * @text アクター個別ウィンドウ設定
+ * @default ------------------------------
+ * @parent ActorStatus
+ * 
+ * @param ActorStatusActorWindowShow
+ * @desc アクター別のウィンドウを表示します。
+ * @text アクター別ウィンドウ表示
+ * @type boolean
+ * @default false
+ * @parent ActorStatusActorWindow
  * 
  * @param EnemyWindow
  * @text 敵キャラ選択設定
@@ -549,6 +615,13 @@
  * @param EnemyWindowMode
  * @desc 敵キャラウィンドウの設定座標モード。(ON：デフォルトの表示位置からの相対座標 OFF:画面左上からの絶対座標)
  * @text 設定座標モード
+ * @type boolean
+ * @default true
+ * @parent EnemyWindowOption
+ * 
+ * @param EnemyNameDyingColor
+ * @desc 敵キャラ名を瀕死時に色を変化させます。
+ * @text 敵ネーム瀕死カラー適用
  * @type boolean
  * @default true
  * @parent EnemyWindowOption
@@ -717,6 +790,12 @@
  * @default true
  * @parent ActorStatusOption
  * 
+ * @param BattleEndActorStatusClose
+ * @desc 戦闘終了時にアクターステータスウィンドウを閉じます。
+ * @text 戦闘終了時ウィンドウ閉め
+ * @type boolean
+ * @default false
+ * @parent ActorStatusOption
  * 
  * @param ActorSetting
  * @text アクター設定
@@ -725,8 +804,8 @@
  * @param DefaultStatusPositionData
  * @text デフォルトステータス座標表示設定
  * @desc デフォルトのステータスの座標、表示設定の設定を行います。
- * @default {"ActorNameChangePosition":"","NameChangePosition":"false","ActorName_X":"0","ActorName_Y":"88","ActorHPChangePosition":"------------------------------","HPGaugeWidth":"128","HPGaugeHeight":"12","HPChangePosition":"false","ActorHP_X":"0","ActorHP_Y":"112","ActorMPChangePosition":"------------------------------","MPGaugeWidth":"128","MPGaugeHeight":"12","MPChangePosition":"false","ActorMP_X":"0","ActorMP_Y":"136","ActorTPChangePosition":"------------------------------","TPGaugeWidth":"128","TPGaugeHeight":"12","TPChangePosition":"false","ActorTP_X":"0","ActorTP_Y":"160","ActorTPBChangePosition":"------------------------------","TPBGaugeWidth":"128","TPBGaugeHeight":"12","TPBChangePosition":"false","ActorTPB_X":"0","ActorTPB_Y":"88","ActorStateChangePosition":"------------------------------","StateChangePosition":"false","ActorState_X":"4","ActorState_Y":"20","OutsideWindowVisible":"false","ActorImgChangePosition":"------------------------------","ImgChangePosition":"false","ActorImg_X":"0","ActorImg_Y":"0","Background":"------------------------------","ActorBackground":"","ActorFrontBackground":""}
- * @type struct<StatusPositionData>
+ * @default {"StatusListData":"[\"{\\\"Status\\\":\\\"'tpb'\\\",\\\"Width\\\":\\\"128\\\",\\\"Height\\\":\\\"12\\\",\\\"PositionX\\\":\\\"0\\\",\\\"PositionY\\\":\\\"88\\\",\\\"FontSize\\\":\\\"0\\\",\\\"ParamName\\\":\\\"\\\",\\\"UserParamID\\\":\\\"\\\",\\\"DetaEval1\\\":\\\"\\\",\\\"DetaEval2\\\":\\\"\\\",\\\"GaugeSetting\\\":\\\"------------------------------\\\",\\\"Color1\\\":\\\"0\\\",\\\"Color2\\\":\\\"0\\\",\\\"ImgesSetting\\\":\\\"------------------------------\\\",\\\"ContentsImges\\\":\\\"\\\"}\",\"{\\\"Status\\\":\\\"'name'\\\",\\\"Width\\\":\\\"128\\\",\\\"Height\\\":\\\"12\\\",\\\"PositionX\\\":\\\"0\\\",\\\"PositionY\\\":\\\"88\\\",\\\"FontSize\\\":\\\"0\\\",\\\"ParamName\\\":\\\"\\\",\\\"UserParamID\\\":\\\"\\\",\\\"DetaEval1\\\":\\\"\\\",\\\"DetaEval2\\\":\\\"\\\",\\\"GaugeSetting\\\":\\\"------------------------------\\\",\\\"Color1\\\":\\\"0\\\",\\\"Color2\\\":\\\"0\\\",\\\"ImgesSetting\\\":\\\"------------------------------\\\",\\\"ContentsImges\\\":\\\"\\\"}\",\"{\\\"Status\\\":\\\"'hpgauge'\\\",\\\"Width\\\":\\\"128\\\",\\\"Height\\\":\\\"12\\\",\\\"PositionX\\\":\\\"0\\\",\\\"PositionY\\\":\\\"112\\\",\\\"FontSize\\\":\\\"0\\\",\\\"ParamName\\\":\\\"\\\",\\\"UserParamID\\\":\\\"\\\",\\\"DetaEval1\\\":\\\"\\\",\\\"DetaEval2\\\":\\\"\\\",\\\"GaugeSetting\\\":\\\"------------------------------\\\",\\\"Color1\\\":\\\"0\\\",\\\"Color2\\\":\\\"0\\\",\\\"ImgesSetting\\\":\\\"------------------------------\\\",\\\"ContentsImges\\\":\\\"\\\"}\",\"{\\\"Status\\\":\\\"'mpgauge'\\\",\\\"Width\\\":\\\"128\\\",\\\"Height\\\":\\\"12\\\",\\\"PositionX\\\":\\\"0\\\",\\\"PositionY\\\":\\\"136\\\",\\\"FontSize\\\":\\\"0\\\",\\\"ParamName\\\":\\\"\\\",\\\"UserParamID\\\":\\\"\\\",\\\"DetaEval1\\\":\\\"\\\",\\\"DetaEval2\\\":\\\"\\\",\\\"GaugeSetting\\\":\\\"------------------------------\\\",\\\"Color1\\\":\\\"0\\\",\\\"Color2\\\":\\\"0\\\",\\\"ImgesSetting\\\":\\\"------------------------------\\\",\\\"ContentsImges\\\":\\\"\\\"}\",\"{\\\"Status\\\":\\\"'tpgauge'\\\",\\\"Width\\\":\\\"128\\\",\\\"Height\\\":\\\"12\\\",\\\"PositionX\\\":\\\"0\\\",\\\"PositionY\\\":\\\"160\\\",\\\"FontSize\\\":\\\"0\\\",\\\"ParamName\\\":\\\"\\\",\\\"UserParamID\\\":\\\"\\\",\\\"DetaEval1\\\":\\\"\\\",\\\"DetaEval2\\\":\\\"\\\",\\\"GaugeSetting\\\":\\\"------------------------------\\\",\\\"Color1\\\":\\\"0\\\",\\\"Color2\\\":\\\"0\\\",\\\"ImgesSetting\\\":\\\"------------------------------\\\",\\\"ContentsImges\\\":\\\"\\\"}\",\"{\\\"Status\\\":\\\"'state'\\\",\\\"Width\\\":\\\"128\\\",\\\"Height\\\":\\\"12\\\",\\\"PositionX\\\":\\\"114\\\",\\\"PositionY\\\":\\\"20\\\",\\\"FontSize\\\":\\\"0\\\",\\\"ParamName\\\":\\\"\\\",\\\"UserParamID\\\":\\\"\\\",\\\"DetaEval1\\\":\\\"\\\",\\\"DetaEval2\\\":\\\"\\\",\\\"GaugeSetting\\\":\\\"------------------------------\\\",\\\"Color1\\\":\\\"0\\\",\\\"Color2\\\":\\\"0\\\",\\\"ImgesSetting\\\":\\\"------------------------------\\\",\\\"ContentsImges\\\":\\\"\\\"}\"]","ActorImgChangePosition":"------------------------------","ImgChangePosition":"false","ActorImg_X":"0","ActorImg_Y":"0","ActorCommandSkin":"------------------------------","WindowSkin":"","WindowColor":"{\"red\":\"0\",\"green\":\"0\",\"bule\":\"0\"}","Background":"------------------------------","ActorBackground":"","ActorFrontBackground":"","OldSetting":"------------------------------","ActorNameChangePosition":"","NameChangePosition":"false","ActorName_X":"0","ActorName_Y":"88","ActorHPChangePosition":"------------------------------","HPGaugeWidth":"128","HPGaugeHeight":"12","HPChangePosition":"false","ActorHP_X":"0","ActorHP_Y":"112","ActorMPChangePosition":"------------------------------","MPGaugeWidth":"128","MPGaugeHeight":"12","MPChangePosition":"false","ActorMP_X":"0","ActorMP_Y":"136","ActorTPChangePosition":"------------------------------","TPGaugeWidth":"128","TPGaugeHeight":"12","TPChangePosition":"false","ActorTP_X":"0","ActorTP_Y":"160","ActorTPBChangePosition":"------------------------------","TPBGaugeWidth":"128","TPBGaugeHeight":"12","TPBChangePosition":"false","ActorTPB_X":"0","ActorTPB_Y":"88","ActorStateChangePosition":"------------------------------","StateChangePosition":"false","ActorState_X":"4","ActorState_Y":"20"}
+ * @type struct<StatusPositionDataList>
  * @parent ActorSetting
  * 
  * @param DefaultActorImgData
@@ -801,13 +880,6 @@
  * @default true
  * @parent ActorStatusParamOption
  * 
- * @param OutsideWindowVisible
- * @desc ステートアイコンの表示をウィンドウ枠外でも表示させます。(アクター画像の上に表示されます)
- * @text ステートアイコンウィンドウ枠外表示
- * @type boolean
- * @default false
- * @parent ActorStatusParamOption
- * 
  * @param StateVisible
  * @desc ステートアイコンを表示させます。外部プラグインで別の場所にステートアイコンを表示するときに設定します。
  * @text ステートアイコン表示
@@ -829,6 +901,52 @@
  * @text アクター画像ウィンドウ内表示
  * @type boolean
  * @default false
+ * @parent ActorStatusParamOption
+ * 
+ * @param NotVisibleStateIcons
+ * @type state[]
+ * @default []
+ * @text 表示しないステート
+ * @desc 表示しないステートアイコン。(ステート2には適用されません)
+ * @parent ActorStatusParamOption
+ * 
+ * @param NotVisibleBuffIcons
+ * @text 表示しないバフ、デバフ
+ * @desc 表示しないバフ、デバフアイコン。(ステート2には適用されません)
+ * @type select[]
+ * @option HP上昇
+ * @value 0
+ * @option MP上昇
+ * @value 1
+ * @option 攻撃力上昇
+ * @value 2
+ * @option 防御力上昇
+ * @value 3
+ * @option 魔法力上昇
+ * @value 4
+ * @option 魔法防御上昇
+ * @value 5
+ * @option 敏捷性上昇
+ * @value 6
+ * @option 運上昇
+ * @value 7
+ * @option HP低下
+ * @value 10
+ * @option MP低下
+ * @value 11
+ * @option 攻撃力低下
+ * @value 12
+ * @option 防御力低下
+ * @value 13
+ * @option 魔法力低下
+ * @value 14
+ * @option 魔法防御低下
+ * @value 15
+ * @option 敏捷性低下
+ * @value 16
+ * @option 運低下
+ * @value 17
+ * @default []
  * @parent ActorStatusParamOption
  * 
  * @param ActorEffect
@@ -921,10 +1039,19 @@
  * @default ////////////////////////////////
  * 
  * @param DamageImgFrame
- * @desc ダメージ、回復時の画像変化フレーム。
- * @text ダメージ、回復時変化フレーム
+ * @desc アクター画像のダメージ、回復時、防御の画像変化フレーム。
+ * @text ダメージ、回復、防御時変化フレーム
  * @type number
  * @default 30
+ * @min 1
+ * @max 9999
+ * @parent ActorImgEffect
+ * 
+ * @param CounterImgFrame
+ * @desc アクター画像の反撃、魔法反射時の画像変化フレーム。
+ * @text 反撃、魔法反射画像変化フレーム
+ * @type number
+ * @default 60
  * @min 1
  * @max 9999
  * @parent ActorImgEffect
@@ -933,7 +1060,7 @@
  * @desc ダメージ時のシェイクを有効にする。
  * @text ダメージシェイク有効
  * @type boolean
- * @default true
+ * @default false
  * @parent ActorImgEffect
  * 
  * @param ActorShakeFlame
@@ -964,7 +1091,7 @@
  * @desc 行動時のエフェクトを有効にする。
  * @text 行動時エフェクト有効
  * @type boolean
- * @default true
+ * @default false
  * @parent ActorImgEffect
  * 
  * @param ActionZoomDuration
@@ -1290,7 +1417,7 @@
  * @param LoseWindowBackGround
  * @text 背景画像ウィンドウ背景設定
  * @default ------------------------------
- * @parent LoseyWindow
+ * @parent LoseWindow
  * 
  * @param LoseBackgroundImg
  * @desc 背景画像ウィンドウを指定する。
@@ -1435,12 +1562,12 @@
  * @parent SupportActorCommand
  * 
  */
-/*~struct~StatusPositionData:
+/*~struct~StatusPositionDataList:
  * 
  * @param StatusListData
  * @text 表示ステータス設定
  * @desc 表示するステータス情報を設定します。一つでも指定してある場合はこちらの設定が適用されます。
- * @default 
+ * @default ["{\"Status\":\"'tpb'\",\"Width\":\"128\",\"Height\":\"12\",\"PositionX\":\"0\",\"PositionY\":\"88\",\"FontSize\":\"0\",\"ParamName\":\"\",\"UserParamID\":\"\",\"DetaEval1\":\"\",\"DetaEval2\":\"\",\"GaugeSetting\":\"------------------------------\",\"Color1\":\"0\",\"Color2\":\"0\",\"ImgesSetting\":\"------------------------------\",\"ContentsImges\":\"\"}","{\"Status\":\"'name'\",\"Width\":\"128\",\"Height\":\"12\",\"PositionX\":\"0\",\"PositionY\":\"88\",\"FontSize\":\"0\",\"ParamName\":\"\",\"UserParamID\":\"\",\"DetaEval1\":\"\",\"DetaEval2\":\"\",\"GaugeSetting\":\"------------------------------\",\"Color1\":\"0\",\"Color2\":\"0\",\"ImgesSetting\":\"------------------------------\",\"ContentsImges\":\"\"}","{\"Status\":\"'hpgauge'\",\"Width\":\"128\",\"Height\":\"12\",\"PositionX\":\"0\",\"PositionY\":\"112\",\"FontSize\":\"0\",\"ParamName\":\"\",\"UserParamID\":\"\",\"DetaEval1\":\"\",\"DetaEval2\":\"\",\"GaugeSetting\":\"------------------------------\",\"Color1\":\"0\",\"Color2\":\"0\",\"ImgesSetting\":\"------------------------------\",\"ContentsImges\":\"\"}","{\"Status\":\"'mpgauge'\",\"Width\":\"128\",\"Height\":\"12\",\"PositionX\":\"0\",\"PositionY\":\"136\",\"FontSize\":\"0\",\"ParamName\":\"\",\"UserParamID\":\"\",\"DetaEval1\":\"\",\"DetaEval2\":\"\",\"GaugeSetting\":\"------------------------------\",\"Color1\":\"0\",\"Color2\":\"0\",\"ImgesSetting\":\"------------------------------\",\"ContentsImges\":\"\"}","{\"Status\":\"'tpgauge'\",\"Width\":\"128\",\"Height\":\"12\",\"PositionX\":\"0\",\"PositionY\":\"160\",\"FontSize\":\"0\",\"ParamName\":\"\",\"UserParamID\":\"\",\"DetaEval1\":\"\",\"DetaEval2\":\"\",\"GaugeSetting\":\"------------------------------\",\"Color1\":\"0\",\"Color2\":\"0\",\"ImgesSetting\":\"------------------------------\",\"ContentsImges\":\"\"}","{\"Status\":\"'state'\",\"Width\":\"128\",\"Height\":\"12\",\"PositionX\":\"114\",\"PositionY\":\"20\",\"FontSize\":\"0\",\"ParamName\":\"\",\"UserParamID\":\"\",\"DetaEval1\":\"\",\"DetaEval2\":\"\",\"GaugeSetting\":\"------------------------------\",\"Color1\":\"0\",\"Color2\":\"0\",\"ImgesSetting\":\"------------------------------\",\"ContentsImges\":\"\"}"]
  * @type struct<ActorStatusList>[]
  * 
  * @param ActorImgChangePosition
@@ -1471,6 +1598,25 @@
  * @min -9999
  * @max 9999
  * @parent ActorImgChangePosition
+ * 
+ * @param ActorWindow
+ * @text アクター別個別ウィンドウ設定
+ * @default ------------------------------
+ * 
+ * @param ActorWindowSkin
+ * @desc ウィンドウスキンを指定します。
+ * @text ウィンドウスキン画像
+ * @type file
+ * @dir img/system
+ * @default 
+ * @parent ActorWindow
+ * 
+ * @param ActorWindowColor
+ * @text ウィンドウカラー
+ * @desc ウィンドウの色の設定をします。
+ * @default {"red":"0","green":"0","bule":"0"}
+ * @type struct<WindowTone>
+ * @parent ActorWindow
  * 
  * @param ActorCommandSkin
  * @text アクターコマンドスキン設定
@@ -1884,7 +2030,7 @@
  * @text ステータス座標表示設定
  * @desc ステータスの座標、表示設定の設定を行います。
  * @default {"ActorNameChangePosition":"","NameChangePosition":"false","ActorName_X":"0","ActorName_Y":"88","ActorHPChangePosition":"------------------------------","HPGaugeWidth":"128","HPGaugeHeight":"12","HPChangePosition":"false","ActorHP_X":"0","ActorHP_Y":"112","ActorMPChangePosition":"------------------------------","MPGaugeWidth":"128","MPGaugeHeight":"12","MPChangePosition":"false","ActorMP_X":"0","ActorMP_Y":"136","ActorTPChangePosition":"------------------------------","TPGaugeWidth":"128","TPGaugeHeight":"12","TPChangePosition":"false","ActorTP_X":"0","ActorTP_Y":"160","ActorTPBChangePosition":"------------------------------","TPBGaugeWidth":"128","TPBGaugeHeight":"12","TPBChangePosition":"false","ActorTPB_X":"0","ActorTPB_Y":"88","ActorStateChangePosition":"------------------------------","StateChangePosition":"false","ActorState_X":"4","ActorState_Y":"20","OutsideWindowVisible":"false","ActorImgChangePosition":"------------------------------","ImgChangePosition":"false","ActorImg_X":"0","ActorImg_Y":"0","Background":"------------------------------","ActorBackground":"","ActorFrontBackground":""}
- * @type struct<StatusPositionData>
+ * @type struct<StatusPositionDataList>
  * @parent ActorPosition
  * 
  * @param ActorImges
@@ -1959,6 +2105,12 @@
  * @value 'recoverySkill'
  * @option アイテム使用時(2)
  * @value 'item'
+ * @option 反撃時
+ * @value 'counter'
+ * @option 魔法反射時
+ * @value 'reflection'
+ * @option 防御時
+ * @value 'guard'
  * @option 詠唱時
  * @value 'chant'
  * @option 勝利時
@@ -2072,18 +2224,22 @@
  * @value 'tpgauge'
  * @option TPB(1)(2)(3)(4)
  * @value 'tpb'
- * @option ステート(3)(4)
+ * @option ステート(3)(4)(8)(9)
  * @value 'state'
- * @option アクター名(1)(3)(4)(5)
+ * @option ステート2(1)(3)(4)(8)(9))
+ * @value 'state2'
+ * @option アクター名(1)(2)(3)(4)(5)
  * @value 'name'
  * @option 独自パラメータ(1)(3)(4)(5)(6)(8)
  * @value 'param'
- * @option 独自パラメータ(動的) (1)(3)(4)(5)(6)(7)(8)
+ * @option 独自パラメータ(動的) (1)(2)(3)(4)(5)(6)(7)(8)
  * @value 'dparam'
- * @option 独自ゲージ (1)(2)(3)(4)(5)(6)(7)(8)
+ * @option 独自ゲージ (1)(2)(3)(4)(5)(6)(7)(8)(10)(11)
  * @value 'usergauge'
  * @option レベル(1)(3)(4)(5)(6)
  * @value 'lv'
+ * @option 画像(3)(4)(7)(12)
+ * @value 'imges'
  * @default
  * 
  * @param Width
@@ -2133,20 +2289,20 @@
  * @default 
  * 
  * @param UserParamID
- * @desc 独自パラメータ、ゲージ識別ID。
+ * @desc 独自パラメータ、ゲージ、画像識別ID。
  * @text 識別ID(7)
  * @type string
  * @default 
  * 
  * @param DetaEval1
- * @desc 評価式。(独自パラメータ、独自ゲージ現在値)
- * @text 評価式A(8)
+ * @desc 評価式または文字列。(独自パラメータ、独自ゲージ現在値、ステートID(ステート、ステート2))
+ * @text 評価式or文字列A(8)
  * @type string
  * @default 
  * 
  * @param DetaEval2
- * @desc 評価式。(独自ゲージ最大値)
- * @text 評価式B(9)
+ * @desc 評価式or文字列。(独自ゲージ最大値、バフ(ステート、ステート2)※1)
+ * @text 評価式or文字列B(9)
  * @type string
  * @default 
  * 
@@ -2156,7 +2312,7 @@
  * 
  * @param Color1
  * @desc ゲージカラー(左)。テキストタブでカラーコードを入力できます。
- * @text ゲージカラー(左)
+ * @text ゲージカラー(左)(10)
  * @type number
  * @default 0
  * @min 0
@@ -2164,11 +2320,23 @@
  * 
  * @param Color2
  * @desc ゲージカラー(右)。テキストタブでカラーコードを入力できます。
- * @text ゲージカラー(右)
+ * @text ゲージカラー(右)(11)
  * @type number
  * @default 0
  * @min 0
  * @parent GaugeSetting
+ * 
+ * @param ImgesSetting
+ * @text 画像設定
+ * @default ------------------------------
+ * 
+ * @param ContentsImges
+ * @desc 画像を指定する。
+ * @text 画像設定(12)
+ * @type file
+ * @dir img/
+ * @default 
+ * @parent ImgesSetting
  * 
  */
 /*~struct~WindowTone:
@@ -2250,10 +2418,14 @@ params.EnemyWindow_X = Number(parameters['EnemyWindow_X'] || 0);
 params.EnemyWindow_Y = Number(parameters['EnemyWindow_Y'] || 0);
 params.EnemyWindow_Width = Number(parameters['EnemyWindow_Width'] || 0);
 params.EnemyWindowMode = eval(parameters['EnemyWindowMode'] || "true");
+params.EnemyNameDyingColor = eval(parameters['EnemyNameDyingColor'] || "true");
 params.EnemyWindowOpacity = Number(parameters['EnemyWindowOpacity'] || 255);
 params.EnemyWindowBackgroundImg = String(parameters['EnemyWindowBackgroundImg']);
 params.EnemyWindowBackground_X = Number(parameters['EnemyWindowBackground_X'] || 0);
 params.EnemyWindowBackground_Y = Number(parameters['EnemyWindowBackground_Y'] || 0);
+
+params.ButtonMode = eval(parameters['ButtonMode']) || 'right';
+params.CancelButtonX = Number(parameters['CancelButtonX'] || 0);
 
 params.ActorStatusWindowSkin = String(parameters['ActorStatusWindowSkin']);
 params.ActorStatusWindowColor = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['ActorStatusWindowColor'])) : null) || {"red":"0","green":"0","bule":"0"};
@@ -2274,6 +2446,7 @@ params.ActorStatusWindowLock = eval(parameters['ActorStatusWindowLock'] || "fals
 params.WindowShow = eval(parameters['WindowShow'] || "true");
 params.WindowFrameShow = eval(parameters['WindowFrameShow'] || "false");
 params.CursorBackShow = eval(parameters['CursorBackShow'] || "true");
+params.ActorStatusActorWindowShow = eval(parameters['ActorStatusActorWindowShow'] || "false");
 
 params.ActorEffectShow = eval(parameters['ActorEffectShow'] || "true");
 params.ActorEffect_X = Number(parameters['ActorEffect_X'] || 0);
@@ -2286,13 +2459,14 @@ params.ActorState_X = Number(parameters['ActorState_X'] || 0);
 params.ActorState_Y = Number(parameters['ActorState_Y'] || 0);
 
 params.DamageImgFrame = Number(parameters['DamageImgFrame'] || 30);
+params.CounterImgFrame = Number(parameters['CounterImgFrame'] || 60);
 params.ActorShakeFlame = Number(parameters['ActorShakeFlame'] || 36);
 params.ActorShakePower = Number(parameters['ActorShakePower'] || 2);
 params.ActorShakeSpeed = Number(parameters['ActorShakeSpeed'] || 20);
 params.ActionZoomDuration = Number(parameters['ActionZoomDuration'] || 60);
 params.ActorFlash = eval(parameters['ActorFlash'] || "true");
-params.OnActionZoom = eval(parameters['OnActionZoom'] || "true");
-params.OnActorShake = eval(parameters['OnActorShake'] || "true");
+params.OnActionZoom = eval(parameters['OnActionZoom'] || "false");
+params.OnActorShake = eval(parameters['OnActorShake'] || "flase");
 
 params.DefaultStatusPositionData = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['DefaultStatusPositionData'])) : null) || {};
 params.DefaultActorImgData = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['DefaultActorImgData'])) : null) || {};
@@ -2304,11 +2478,14 @@ params.FaceHeight = Number(parameters['FaceHeight'] || 0);
 params.NameShow = eval(parameters['NameShow'] || "true");
 params.TPBShow = eval(parameters['TPBShow'] || "true");
 params.StateVisible = eval(parameters['StateVisible'] || "true");
-params.OutsideWindowVisible = eval(parameters['OutsideWindowVisible'] || "false");
+params.OutsideWindowVisible = false;
 params.SelectBackShow = eval(parameters['SelectBackShow'] || "true");
 params.ActorSelectBackShow = eval(parameters['ActorSelectBackShow'] || "true");
 params.ImgDeathHide = eval(parameters['ImgDeathHide'] || "true");
 params.FaceHeightOnWindow = eval(parameters['FaceHeightOnWindow'] || "false");
+params.NotVisibleStateIcons = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['NotVisibleStateIcons'])) : null) || [];
+params.NotVisibleBuffIcons = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['NotVisibleBuffIcons'])) : null) || [];
+params.BattleEndActorStatusClose = eval(parameters['BattleEndActorStatusClose'] || "false");
 
 params.EnemySkillAnimation = Number(parameters['EnemySkillAnimation'] || 1);
 
@@ -2316,14 +2493,14 @@ params.AppearWindowVisible = eval(parameters['AppearWindowVisible'] || "false");
 params.AppearWindowOpacity = Number(parameters['AppearWindowOpacity'] || 255);
 params.AppearWindowAnchorMode = eval(parameters['AppearWindowAnchorMode']) || 'under';
 params.AppearBackgroundImg = String(parameters['AppearBackgroundImg']);
-params.AppearBackground_X = Number(parameters['AppearBackground_X'] || 0);
-params.AppearBackground_Y = Number(parameters['AppearBackground_Y'] || 0);
+params.AppearBackground_X = Number(parameters['AppearWindowBackground_X'] || 0);
+params.AppearBackground_Y = Number(parameters['AppearWindowBackground_Y'] || 0);
 
 params.ItemWindowShow = eval(parameters['ItemWindowShow'] || "true");
 params.ItemWindowOpacity = Number(parameters['ItemWindowOpacity'] || 255);
 params.ItemWindowBackgroundImg = String(parameters['ItemWindowBackgroundImg']);
-params.ItemBackground_X = Number(parameters['ItemBackground_X'] || 0);
-params.ItemBackground_Y = Number(parameters['ItemBackground_Y'] || 0);
+params.ItemBackground_X = Number(parameters['ItemWindowBackground_X'] || 0);
+params.ItemBackground_Y = Number(parameters['ItemWindowBackground_Y'] || 0);
 
 params.SkillWindowShow = eval(parameters['SkillWindowShow'] || "true");
 params.SkillWindowOpacity = Number(parameters['SkillWindowOpacity'] || 255);

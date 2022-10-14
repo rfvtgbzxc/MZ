@@ -79,7 +79,7 @@ Imported.NUUN_ContentsBackVisible = true;
 const parameters = PluginManager.parameters('NUUN_ContentsBackVisible');
 const BackVisibleClass = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['BackVisibleClass'])) : null) || [];
 const BackVisible = eval(parameters['BackVisible'] || 'true');
-//const ItemHeightAdjust = eval(parameters['ItemHeightAdjust'] || 'true');
+//const ItemHeightAdjust = eval(parameters['ItemHeightAdjust'] || 'false');
 const ItemHeightAdjust = false;
 
 function getContentsBackClass(thisClass) {
@@ -88,8 +88,8 @@ function getContentsBackClass(thisClass) {
 
 const _Window_Selectable_initialize = Window_Selectable.prototype.initialize;
 Window_Selectable.prototype.initialize = function(rect) {
-    _Window_Selectable_initialize.call(this, rect);
     this._contentsBackVisible = this.isContentsBack();
+    _Window_Selectable_initialize.call(this, rect);
 };
 
 Window_Selectable.prototype.isContentsBack = function() {
@@ -128,17 +128,9 @@ Window_NameInput.prototype.itemRect = function(index) {
     return rect;
 };
 
-
-const _Scene_Base_calcWindowHeight = Scene_Base.prototype.calcWindowHeight;
-Scene_Base.prototype.calcWindowHeight = function(numLines, selectable) {
-    if ()
-
-
-    if (selectable) {
-        return Window_Selectable.prototype.fittingHeight(numLines);
-    } else {
-        return Window_Base.prototype.fittingHeight(numLines);
-    }
+const _Window_Selectable_fittingHeight = Window_Selectable.prototype.fittingHeight;
+Window_Selectable.prototype.fittingHeight = function(numLines) {
+    return ItemHeightAdjust && this._contentsBackVisible ? (numLines * this.lineHeight() + $gameSystem.windowPadding() * 2) : _Window_Selectable_fittingHeight.call(this, numLines);
 };
 
 })();

@@ -1,5 +1,5 @@
 # [XP風対象選択ウィンドウ](https://raw.githubusercontent.com/nuun888/MZ/master/NUUN_XPSelectWindow.js)
-# Ver.1.0.5
+# Ver.1.1.2
 [ダウンロード](https://raw.githubusercontent.com/nuun888/MZ/master/NUUN_XPSelectWindow.js)  
 
 ## 必須、前提プラグイン
@@ -17,6 +17,13 @@
 ![画像](img/XPSelectWindow3.png)  
 
 ## 更新履歴
+2022/9/4 Ver.1.1.2  
+特定の場面でウィンドウが表示さてたままになってしまう問題を修正。  
+2022/8/26 Ver.1.1.1  
+スクロール時のSEを再生しない機能を追加。  
+アクターコマンドを開くと対象選択時のカーソルSEが再生しまう問題を修正。  
+2022/8/24 Ver.1.1.0  
+敵対象選択時にスクロール選択出来る機能を追加。  
 2022/6/5 Ver.1.0.5  
 微修正。  
 2022/4/2 Ver.1.0.4  

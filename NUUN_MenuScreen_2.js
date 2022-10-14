@@ -10,7 +10,7 @@
  * @target MZ
  * @plugindesc メニュー画面タイプ２
  * @author NUUN
- * @version 1.6.3
+ * @version 1.8.1
  * @base NUUN_Base
  * @orderAfter NUUN_Base
  * 
@@ -51,13 +51,35 @@
  * メニューUIの背景として使用します。
  * ゲーム中、背景画像1を変更しない場合は、メニュー背景を背景画像2で設定しても問題ありません。
  * 
+ * 備考
+ * ※1
+ * アクターステータス表示項目のステートの評価式には表示したいステートを指定できます。(直接記入)
+ * 表示したいステートIDを,区切りで指定します。
+ * 例 "1,5,11" 必ず''または""で囲む
+ * "1-10" ステートID1～10番まで表示
+ * "3-11,15"ステートID3～11,15番を表示
+ * 
  * 利用規約
  * このプラグインはMITライセンスで配布しています。
  * 
- * Ver.1.1.0以降ではNUUN_Base Ver.1.4.1以降が必要となります。
- * 
  * 更新履歴
- * 2022/6/10 Ver.1.2.3
+ * 2022/9/10 Ver.1.8.1
+ * インフォウィンドウの行を1行に指定したときに、スクロールしてしまう問題を修正。
+ * 2022/8/27 Ver.1.8.0
+ * アクターステータスに任意の画像を表示できる機能を追加。
+ * ゲージがアクターの表示範囲内に収まるように修正。
+ * 2022/8/22 Ver.1.7.2
+ * 制御文字でフォントサイズ変更をした後に、項目のフォントのサイズが変化してしまう問題を修正。
+ * 2022/7/23 Ver.1.7.1
+ * ステートの表示ステートを範囲指定する機能を追加。
+ * 2022/7/23 Ver.1.7.0
+ * ステートのアイコンを表示したいステートのみ表示する機能を追加。
+ * バトルステータスに表示されるステートの表示をメニュー画面上に表示できる機能を追加。
+ * 経験値の%表示時に小数点が指定した小数点数を無視して表示されてしまう問題を修正。
+ * 2022/7/4 Ver.1.6.4
+ * インフォのフォントサイズを各項目毎に設定できるように修正。
+ * チャプターテキストプラグイン対応による処理追加。
+ * 2022/6/10 Ver.1.6.3
  * ステータス独自パラメータで名称を無記入した場合、パラメータが右にずれる問題を修正。
  * 2022/6/7 Ver.1.6.2
  * 一部プラグインでの競合対策。
@@ -552,8 +574,10 @@
  * @value 3
  * @option レベル(1)(3)(4)(5)(6)(7)(13)
  * @value 4
- * @option ステート(3)(4)(5)(6)(7)
+ * @option ステート(3)(4)(5)(6)(7)(10※1)
  * @value 5
+ * @option ステート(戦闘用と同じ表示)(3)(4)(5)(6)
+ * @value 7
  * @option 独自パラメータ(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(13)
  * @value 6
  * @option ＨＰ(3)(4)(5)(6)(7)(21)
@@ -620,6 +644,8 @@
  * @value 49
  * @option 独自ゲージ(3)(4)(5)(6)(7)(10)(20)(21)(22)(23)(24)
  * @value 100
+ * @option 画像(3)(4)(5)(6)(25)
+ * @value 200
  * @option ライン(1)(2)(3)(4)(5)(6)(7)
  * @value 1000
  * @default 0
@@ -696,8 +722,8 @@
  * @default 'left'
  * 
  * @param DetaEval
- * @desc 評価式。
- * @text 評価式(javaScript)(10)
+ * @desc 評価式または文字列を記入します。
+ * @text 評価式or文字列(javaScript)(10)
  * @type combo
  * @option '$gameVariables.value(0);//ゲーム変数'
  * @option 'actor;//アクターのゲームデータ'
@@ -730,7 +756,7 @@
  * @default ------------------------------
  * 
  * @param GaugeID
- * @desc 独自ゲージ識別ID。
+ * @desc 識別ID。
  * @text 識別ID(20)
  * @type string
  * @default 
@@ -770,32 +796,46 @@
  * @default 0
  * @min 0
  * @parent GaugeSetting
+ * 
+ * @param ImgSetting
+ * @text 画像設定
+ * @default ------------------------------
+ * 
+ * @param ImgData
+ * @desc 表示する画像を指定します。
+ * @text 画像(25)
+ * @type file
+ * @dir img/
+ * @default 
+ * @parent ImgSetting
  *
  */
 /*~struct~InfoListData:
  *
  * @param DateSelect
  * @text 表示する項目
- * @desc 表示する項目を指定します。
+ * @desc 表示する項目を指定します。※名称のみ適用　テキストのフォントサイズは\FS[]で指定
  * @type select
  * @option なし
  * @value 0
- * @option プレイ時間(1)(2)(3)(4)(5)(6)(7)(8)(10)(11)
+ * @option プレイ時間(1)(2)(3)(4)(5)(6)(7)(8)(10)(11)(13)
  * @value 1
- * @option 所持金(1)(2)(3)(4)(5)(6)(7)(8)(11)
+ * @option 所持金(1)(2)(3)(4)(5)(6)(7)(8)(11)(13)
  * @value 2
- * @option 現在地(1)(2)(3)(4)(5)(6)(7)(8)(10)(11)
+ * @option 現在地(1)(2)(3)(4)(5)(6)(7)(8)(10)(11)(13)
  * @value 3
- * @option 独自パラメータ(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)
+ * @option 独自パラメータ(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(13)
  * @value 4
- * @option 名称のみ(1)(2)(3)(4)(5)(7)(8)(10)(11)
+ * @option 名称のみ(1)(2)(3)(4)(5)(7)(8)(10)(11)(13)
  * @value 5
- * @option メニューコマンド説明(1)(2)(3)(4)(5)(7)(8)
+ * @option メニューコマンド説明(1)(2)(3)(4)(5)(7)(8)(13※)
  * @value 6
  * @option フリーテキスト(1)(2)(3)(4)(12)
  * @value 10
- * @option 行動目標（要メニュー画面行動目標表示）(1)(2)(3)(4)(6)(7)(8)(11)
+ * @option 行動目標（要メニュー画面行動目標表示）(1)(2)(3)(4)(6)(7)(8)(11)(13※)
  * @value 11
+ * @option キャプター（要チャプターテキスト）(1)(2)(3)(4)(6)(7)(8)(11)
+ * @value 12
  * @default 0
  * 
  * @param X_Position
@@ -895,6 +935,13 @@
  * @text フリーテキストのテキスト(12)
  * @type multiline_string
  * @default
+ * 
+ * @param ContentsFontSize
+ * @desc フォントサイズ（メインフォントからの差）
+ * @text フォントサイズ(13)
+ * @type number
+ * @default 0
+ * @min -99
  *
  */
 /*~struct~actorImgList:
@@ -1124,6 +1171,7 @@ const InfoFontSize = Number(parameters['InfoFontSize'] || 0);
 const InfoSideShow = eval(parameters['InfoSideShow'] || "false");
 const InfoSideList = (NUUN_Base_Ver >= 113 ? (DataManager.nuun_structureData(parameters['InfoSideList'])) : null) || [];
 
+let maxGaugeWidth = 128;
 let HPGaugeWidth = OrgHPGaugeWidth;
 let MPGaugeWidth = OrgMPGaugeWidth;
 let TPGaugeWidth = OrgTPGaugeWidth;
@@ -1319,7 +1367,7 @@ Scene_Menu.prototype.mainCommandAreaHeight = function() {
 };
 
 Scene_Menu.prototype.infoAreaHeight = function(rows) {
-    return this.calcWindowHeight(rows, (rows === 1));
+    return this.calcWindowHeight(rows, false);
 };
 
 Scene_Menu.prototype.menuHelpAreaHeight = function() {
@@ -1444,6 +1492,7 @@ Window_MenuStatus.prototype.drawItemStatus = function(index) {
     const itemWidth = this.itemContentsWidth(rect.width);
     const lineHeight = this.lineHeight();
     const colSpacing = this.colSpacing();
+    maxGaugeWidth = itemWidth;
     for (const data of StatusList) {
       const x_Position = data.X_Position;
       const position = Math.min(x_Position, this.maxContentsCols());
@@ -1601,10 +1650,13 @@ Window_MenuStatus.prototype.drawContentsBase = function(data, x, y, width, actor
         this.drawActorLevel(data, x, y, width, actor);
         break;
     case 5:
-        this.drawActorIcons(x, y, width, actor);
+        this.drawActorIcons(data, x, y, width, actor);
         break;
     case 6:
         this.drawParam(data, x, y, width, actor);
+        break;
+    case 7:
+        this.drawPlaceStateIcon(x, y, actor);
         break;
     case 11:
         $gameTemp.menuParam = data;
@@ -1661,9 +1713,8 @@ Window_MenuStatus.prototype.drawContentsBase = function(data, x, y, width, actor
         $gameTemp.menuParam = data;
         this.placeUserGauge(data, x, y, actor);
         break;
-    case 101:
-        break;
-    case 102:
+    case 200:
+        this.drawMenuStatusImg(data, x, y, actor);
         break;
     case 1000:
         this.horzLine(x, y, width, actor);
@@ -1852,13 +1903,24 @@ Window_MenuStatus.prototype.drawActorLevel = function(data, x, y, width, actor) 
     this.contents.fontSize = $gameSystem.mainFontSize();
 };
 
-Window_MenuStatus.prototype.drawActorIcons = function(x, y, width, actor) {
+Window_MenuStatus.prototype.drawActorIcons = function(data, x, y, width, actor) {
+    let icons = [];
+    let states = [];
     const iconWidth = ImageManager.iconWidth;
-    const icons = actor.allIcons().slice(0, Math.floor(width / iconWidth));
-    let iconX = x;
-    for (const icon of icons) {
-        this.drawIcon(icon, iconX, y + 2);
-        iconX += iconWidth;
+    const dataEval = data.DetaEval;
+    if (dataEval) {
+        const stateList = dataEval.split(',');
+        for (const id of stateList) {
+            Array.prototype.push.apply(states, this.nuun_getListIdData(id));
+        }
+        icons = actor.allIcons().filter(icon => states.some(i => $dataStates[i].iconIndex === icon)).slice(0, Math.floor(width / iconWidth));
+        let iconX = x;
+        for (const icon of icons) {
+            this.drawIcon(icon, iconX, y + 2);
+            iconX += iconWidth;
+        }
+    } else {
+        Window_StatusBase.prototype.drawActorIcons.call(this, actor, x, y, width);
     }
 };
 
@@ -1914,6 +1976,11 @@ Window_MenuStatus.prototype.placeExpGauge = function(x, y, actor) {
     this.placeGauge(actor, "menuexp", x, y);
 };
 
+Window_MenuStatus.prototype.drawPlaceStateIcon = function(x, y, actor) {
+    const hw = Math.floor(ImageManager.iconWidth / 2);
+    this.placeStateIcon(actor, x + hw, y + hw);
+};
+
 Window_MenuStatus.prototype.placeUserGauge = function(data, x, y, actor) {
     $gameTemp.menuGaugeType = data.GaugeID;
     this.placeGauge(actor, data.GaugeID, x, y);
@@ -1930,6 +1997,14 @@ Window_MenuStatus.prototype.placeGauge = function(actor, type, x, y) {
     sprite.show();
 };
 
+Window_MenuStatus.prototype.drawMenuStatusImg = function(data, x, y, actor) {
+    if (data.ImgData) {
+        const rect = this.itemRect(0);
+        const bitmap = ImageManager.nuun_LoadPictures(data.ImgData);
+        this.contents.blt(bitmap, 0, 0, rect.width, rect.height, x - this.colSpacing(), y - this.itemPadding());
+    }
+};
+
 
 function Window_InfoMenu() {
     this.initialize(...arguments);
@@ -1944,12 +2019,16 @@ Window_InfoMenu.prototype.initialize = function(rect) {
     this.refresh();
 };
 
+Window_InfoMenu.prototype.itemHeight = function() {
+    return this.lineHeight();
+};
+
 Window_InfoMenu.prototype.refresh = function() {
     this.contents.clear();
     const list = this.getInfoList();
     const lineHeight = this.lineHeight();
-    this.contents.fontSize = $gameSystem.mainFontSize() + this.getFontSize();
     for (const data of list) {
+        this.contents.fontSize = $gameSystem.mainFontSize() + this.getFontSize() + (data.ContentsFontSize || 0);
         const x_Position = data.X_Position;
         const position = Math.min(x_Position, this.maxCols());
         const rect = this.itemRect(position - 1);
@@ -1989,7 +2068,10 @@ Window_InfoMenu.prototype.dateDisplay = function(data, x, y, width) {
     case 11:
         this.drawDestination(data, x, y, width);
         break;
-      default:
+    case 12:
+        this.drawChapter(data, x, y, width);
+        break;
+    default:
         break;
     }
 };
@@ -2055,10 +2137,12 @@ Window_InfoMenu.prototype.drawParam = function(data, x, y, width) {
 
 Window_InfoMenu.prototype.drawCommandExplanation = function(data, x, y, width) {
     this.drawTextEx(this._text, x, y, width);
+    this.resetFontSettings();
 };
 
 Window_InfoMenu.prototype.drawFreeText = function(data, x, y, width) {
     this.drawTextEx(data.Text, x, y, width);
+    this.resetFontSettings();
 };
 
 Window_InfoMenu.prototype.drawDestination = function(data, x, y, width) {
@@ -2082,6 +2166,31 @@ Window_InfoMenu.prototype.drawDestination = function(data, x, y, width) {
     if (text) {
         this.drawTextEx(text, x + iconWidth + textWidth, y, width - textWidth - iconWidth);
     }
+    this.resetFontSettings();
+};
+
+Window_InfoMenu.prototype.drawChapter = function(data, x, y, width) {
+    if (!Imported.NUUN_Chapter) {
+        return;
+    }
+    let iconWidth = 0;
+    let textWidth = 0;
+    if (data.InfoIcon > 0) {
+        this.drawIcon(data.InfoIcon, x, y + 2);
+        iconWidth = ImageManager.iconWidth + 6;
+    }
+    if (data.ParamName) {
+        this.changeTextColor(NuunManager.getColorCode(data.NameColor));
+        const nameText = data.ParamName ? data.ParamName : '';
+        this.drawText(nameText, x + iconWidth, y, textWidth);
+        textWidth = this.systemWidth(data.SystemItemWidth, width);
+    }
+    this.resetTextColor();
+    const text = this.getChapter();
+    if (text) {
+        this.drawTextEx(text, x + iconWidth + textWidth, y, width - textWidth - iconWidth);
+    }
+    this.resetFontSettings();
 };
 
 Window_InfoMenu.prototype.drawName = function(data, x, y, width) {
@@ -2221,7 +2330,7 @@ Sprite_MenuGauge.prototype.constructor = Sprite_MenuGauge;
 Sprite_MenuGauge.prototype.initialize = function() {
     this._statusType = $gameTemp.menuGaugeType;
     this.menuParam = $gameTemp.menuParam;
-    this._gaugeWidth = this.getMenuGaugeWidth();
+    this._gaugeWidth = Math.min(this.getMenuGaugeWidth(), maxGaugeWidth);
     this._gaugeHeight = this.getMenuGaugeHeight();
     Sprite_Gauge.prototype.initialize.call(this);
 };
@@ -2306,7 +2415,7 @@ Sprite_MenuGauge.prototype.displyaExp = function() {
     } else if (ExpDisplayMode === 2) {
         return this.currentValue();
     } else if (ExpDisplayMode === 3) {
-        return NuunManager.numPercentage(this.currentValue() / this.currentMaxValue(), EXPDecimal, DecimalMode) * 100;
+        return NuunManager.numPercentage(this.currentValue() / this.currentMaxValue() * 100, EXPDecimal, DecimalMode);
     }
     return this._battler.currentExp() - this._battler.currentLevelExp();
 };
